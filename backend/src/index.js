@@ -199,20 +199,19 @@ router.del("/games/:id", (ctx) => {
   ctx.response.status = 204; // no content
 });
 
-// setInterval(() => {
-//   lastUpdated = new Date();
-//   const game = new Game({
-//     id: randomUUID(),
-//     name: `game ${games.length}`,
-//     price: 0,
-//     launchDate: lastUpdated,
-//     isCracked: false,
-//     version: 1,
-//   });
-//   games.push(game);
-//   console.log(`New game: ${game.name}`);
-//   broadcast({ event: "created", payload: { game } });
-// }, 5000);
+setInterval(() => {
+  const game = new Game({
+    id: randomUUID(),
+    name: `Game ${games.length}`,
+    price: games.length * 10,
+    launchDate: new Date().toISOString(),
+    isCracked: false,
+    version: 1,
+  });
+  games.push(game);
+  console.log(`New game: ${game.name}`);
+  broadcast({ event: "created", payload: { game } });
+}, 5000);
 
 app.use(router.routes());
 app.use(router.allowedMethods());

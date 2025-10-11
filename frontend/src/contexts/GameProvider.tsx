@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useReducer } from "react";
 import Game from "../models/Game";
-import { createGame, getGames, updateGame } from "../services/GameApi";
+import { createGame, getGames, newWebSocket, updateGame } from "../services/GameApi";
 import GameContext, { GamesState, initialGameState, SaveGameFunctionType } from "./GameContext";
 import { getLogger } from "../utils/AppLogger";
+import { handleApiError } from "../services/ErrorHandler";
 
 const log = getLogger("GameProvider");
 
@@ -75,7 +76,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
           dispatch({ type: FETCH_GAMES_SUCCEEDED, payload: { games } });
         }
       } catch (error) {
-        log("fetchGames failed", error);
+        log("fetchGames failed", handleApiError(error));
 
         if (!canceled) {
           dispatch({ type: FETCH_GAMES_FAILED, payload: { error: error as Error } });
@@ -100,12 +101,43 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       log("saveGame succeeded");
       dispatch({ type: SAVE_GAMES_SUCCEEDED, payload: { game: savedGame } });
     } catch (error) {
-      log("saveGame failed", error);
+      log("saveGame failed", handleApiError(error));
       dispatch({ type: SAVE_GAMES_FAILED, payload: { error: error as Error } });
+
+      throw error;
     }
   };
 
+  const wsEffect = () => {
+    let canceled = false;
+    log("wsEffect - connecting");
+
+    const closeWebSocket = newWebSocket((message) => {
+      if (canceled) {
+        return;
+      }
+      const {
+        event,
+        payload: { game },
+      } = message;
+
+      log(`WebSocket message, game ${event}`);
+
+      if (event === "created" || event === "updated") {
+        dispatch({ type: SAVE_GAMES_SUCCEEDED, payload: { game } });
+      }
+    });
+
+    return () => {
+      log("wsEffect - disconnecting");
+      canceled = true;
+
+      closeWebSocket();
+    };
+  };
+
   useEffect(getGamesEffect, []);
+  useEffect(wsEffect, []);
 
   const saveGame = useCallback<SaveGameFunctionType>(saveItemCallback, []);
   const value = { games, fetching, fetchingError, saving, savingError, saveGame };

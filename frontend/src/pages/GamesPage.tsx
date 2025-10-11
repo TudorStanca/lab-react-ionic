@@ -14,6 +14,7 @@ import { add } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
 import GameItem from "../components/GameItem";
 import { useGames } from "../contexts/GameContext";
+import { handleApiError } from "../services/ErrorHandler";
 
 const GamesPage = () => {
   const { games, fetching, fetchingError } = useGames();
@@ -35,7 +36,7 @@ const GamesPage = () => {
             ))}
           </IonList>
         )}
-        {fetchingError && <div>{fetchingError.message || "Failed to fetch games"}</div>}
+        {fetchingError && <div>{handleApiError(fetchingError) || "Failed to fetch games"}</div>}
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton onClick={() => history.push("/game")}>
             <IonIcon icon={add} />

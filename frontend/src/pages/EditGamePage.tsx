@@ -18,6 +18,7 @@ import { useHistory, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Game from "../models/Game";
 import { useGames } from "../contexts/GameContext";
+import { handleApiError } from "../services/ErrorHandler";
 
 const log = getLogger("EditGamePage");
 
@@ -63,7 +64,7 @@ const EditGamePage = () => {
         history.goBack();
       })
       .catch((error) => {
-        log("Error saving game:", error);
+        log("Error saving game:", handleApiError(error) || error.message);
       });
   };
 
@@ -98,7 +99,7 @@ const EditGamePage = () => {
           <IonCheckbox checked={isCracked} onIonChange={(e) => setIsCracked(Boolean(e.detail.checked))} />
         </IonItem>
         <IonLoading isOpen={saving} />
-        {savingError && <div>{savingError.message || "Failed to save game."}</div>}
+        {savingError && <div>{handleApiError(savingError) || "Failed to save game."}</div>}
       </IonContent>
     </IonPage>
   );
