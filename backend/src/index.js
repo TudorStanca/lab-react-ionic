@@ -1,9 +1,10 @@
 import Koa from "koa";
+import http from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import Router from "@koa/router";
 import cors from "@koa/cors";
 import bodyparser from "koa-bodyparser";
-import http from "http";
+import { randomUUID } from "crypto";
 
 const app = new Koa();
 const server = http.createServer(app.callback());
@@ -17,41 +18,42 @@ app.use(async (ctx, next) => {
   const start = new Date();
   await next();
   const ms = new Date() - start;
-  console.log(`${ctx.method} ${ctx.url} ${ctx.response.status} - ${ms}ms`);
+  console.log(`${ctx.method} ${ctx.url} ${ctx.response.status} - ${ms}ms.`);
 });
 
 app.use(async (ctx, next) => {
   try {
     await next();
   } catch (err) {
-    ctx.response.body = { message: err.message || "Unexpected error" };
+    ctx.response.body = { message: err.message || "Unexpected error." };
     ctx.response.status = 500;
   }
 });
 
-class Item {
-  constructor({ id, text, date, version }) {
+class Game {
+  constructor({ id, name, price, launchDate, isCracked, version }) {
     this.id = id;
-    this.text = text;
-    this.date = date;
+    this.name = name;
+    this.price = price;
+    this.launchDate = launchDate;
+    this.isCracked = isCracked;
     this.version = version;
   }
 }
 
-const items = [];
+const games = [];
 for (let i = 0; i < 3; i++) {
-  items.push(
-    new Item({
-      id: `${i}`,
-      text: `item ${i}`,
-      date: new Date(Date.now() + i),
+  games.push(
+    new Game({
+      id: randomUUID(),
+      name: `Game ${i}`,
+      price: (i + 1) * 10,
+      launchDate: new Date(Date.now() + i),
+      isCracked: false,
       version: 1,
     })
   );
 }
-
-let lastUpdated = items[items.length - 1].date;
-let lastId = items[items.length - 1].id;
 
 const broadcast = (data) =>
   wss.clients.forEach((client) => {
@@ -62,102 +64,136 @@ const broadcast = (data) =>
 
 const router = new Router();
 
-router.get("/item", (ctx) => {
-  ctx.response.body = items;
+router.get("/game", (ctx) => {
+  ctx.response.body = games;
   ctx.response.status = 200;
 });
 
-router.get("/item/:id", async (ctx) => {
-  const itemId = ctx.request.params.id;
-  const item = items.find((item) => itemId === item.id);
+router.get("/game/:id", async (ctx) => {
+  const gameId = ctx.params.id;
+  const game = games.find((g) => gameId === g.id);
 
-  if (item) {
-    ctx.response.body = item;
+  if (game) {
+    ctx.response.body = game;
     ctx.response.status = 200; // ok
   } else {
-    ctx.response.body = { message: `item with id ${itemId} not found` };
-    ctx.response.status = 404; // NOT FOUND (if you know the resource was deleted, then return 410 GONE)
+    ctx.response.body = { message: `Game with id ${gameId} not found.` };
+    ctx.response.status = 404; // NOT FOUND
   }
 });
 
-const createItem = async (ctx) => {
-  const item = ctx.request.body;
+const validateGame = (game) => {
+  const errorMessages = [];
 
-  if (!item.text) {
-    // validation
-    ctx.response.body = { message: "Text is missing" };
-    ctx.response.status = 400; //  BAD REQUEST
-    return;
+  if (!game.name) {
+    errorMessages.push("Name is missing.");
   }
 
-  item.id = `${parseInt(lastId) + 1}`;
-  lastId = item.id;
-  item.date = new Date();
-  item.version = 1;
-  items.push(item);
+  if (!game.launchDate || isNaN(Date.parse(game.launchDate))) {
+    errorMessages.push("LaunchDate is missing or invalid.");
+  }
 
-  ctx.response.body = item;
-  ctx.response.status = 201; // CREATED
+  if (!game.price || game.price < 0) {
+    errorMessages.push("Price is missing or invalid.");
+  }
 
-  broadcast({ event: "created", payload: { item } });
+  if (game.isCracked === null) {
+    errorMessages.push("IsCracked is missing.");
+  }
+
+  return errorMessages.length > 0 ? errorMessages : null;
 };
 
-router.post("/item", async (ctx) => {
-  await createItem(ctx);
+const createGame = async (ctx) => {
+  const game = ctx.request.body;
+
+  const errorMessage = validateGame(game);
+
+  if (errorMessage) {
+    ctx.response.body = { message: errorMessage.join(" ") };
+    ctx.response.status = 400; // BAD REQUEST
+
+    return;
+  }
+
+  game.id = randomUUID();
+  game.version = 1;
+  games.push(game);
+
+  ctx.response.body = game;
+  ctx.response.status = 201; // CREATED
+
+  broadcast({ event: "created", payload: { game } });
+};
+
+router.post("/game", async (ctx) => {
+  await createGame(ctx);
 });
 
-router.put("/item/:id", async (ctx) => {
+router.put("/game/:id", async (ctx) => {
   const id = ctx.params.id;
-  const item = ctx.request.body;
-  item.date = new Date();
-  const itemId = item.id;
+  const game = ctx.request.body;
+  const gameId = game.id;
 
-  if (itemId && id !== item.id) {
-    ctx.response.body = { message: `Param id and body id should be the same` };
+  if (!gameId) {
+    ctx.response.body = { message: `Game body id is missing.` };
     ctx.response.status = 400; // BAD REQUEST
+
     return;
   }
 
-  if (!itemId) {
-    await createItem(ctx);
+  if (id !== game.id) {
+    ctx.response.body = { message: `Param id and body id should be the same.` };
+    ctx.response.status = 400; // BAD REQUEST
+
     return;
   }
 
-  const index = items.findIndex((item) => item.id === id);
+  const errorMessage = validateGame(game);
+
+  if (errorMessage) {
+    ctx.response.body = { message: errorMessage.join(" ") };
+    ctx.response.status = 400; // BAD REQUEST
+    
+    return;
+  }
+
+  const index = games.findIndex((g) => g.id === id);
 
   if (index === -1) {
-    ctx.response.body = { message: `item with id ${id} not found` };
+    ctx.response.body = { message: `Game with id ${id} not found.` };
     ctx.response.status = 400; // BAD REQUEST
+
     return;
   }
 
-  const itemVersion = parseInt(ctx.request.get("ETag")) || item.version;
+  const gameVersion = parseInt(ctx.get("ETag")) || game.version;
 
-  if (itemVersion < items[index].version) {
-    ctx.response.body = { message: `Version conflict` };
+  if (gameVersion < games[index].version) {
+    ctx.response.body = { message: `Version conflict.` };
     ctx.response.status = 409; // CONFLICT
+
     return;
   }
 
-  item.version++;
-  items[index] = item;
-  lastUpdated = new Date();
+  game.version++;
+  games[index] = game;
 
-  ctx.response.body = item;
+  ctx.response.body = game;
   ctx.response.status = 200; // OK
 
-  broadcast({ event: "updated", payload: { item } });
+  broadcast({ event: "updated", payload: { game } });
 });
 
-router.del("/item/:id", (ctx) => {
+router.del("/game/:id", (ctx) => {
   const id = ctx.params.id;
-  const index = items.findIndex((item) => id === item.id);
+  const index = games.findIndex((g) => id === g.id);
 
   if (index !== -1) {
-    const item = items[index];
-    items.splice(index, 1);
-    lastUpdated = new Date();
-    broadcast({ event: "deleted", payload: { item } });
+    const game = games[index];
+    games.splice(index, 1);
+
+    broadcast({ event: "deleted", payload: { game } });
   }
 
   ctx.response.status = 204; // no content
@@ -165,16 +201,17 @@ router.del("/item/:id", (ctx) => {
 
 // setInterval(() => {
 //   lastUpdated = new Date();
-//   lastId = `${parseInt(lastId) + 1}`;
-//   const item = new Item({
-//     id: lastId,
-//     text: `item ${lastId}`,
-//     date: lastUpdated,
+//   const game = new Game({
+//     id: randomUUID(),
+//     name: `game ${games.length}`,
+//     price: 0,
+//     launchDate: lastUpdated,
+//     isCracked: false,
 //     version: 1,
 //   });
-//   items.push(item);
-//   console.log(`New item: ${item.text}`);
-//   broadcast({ event: "created", payload: { item } });
+//   games.push(game);
+//   console.log(`New game: ${game.name}`);
+//   broadcast({ event: "created", payload: { game } });
 // }, 5000);
 
 app.use(router.routes());
