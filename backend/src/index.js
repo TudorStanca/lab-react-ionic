@@ -48,7 +48,7 @@ for (let i = 0; i < 3; i++) {
       id: randomUUID(),
       name: `Game ${i}`,
       price: (i + 1) * 10,
-      launchDate: new Date(Date.now() + i),
+      launchDate: new Date(Date.now() + i).toISOString(),
       isCracked: false,
       version: 1,
     })
@@ -64,12 +64,12 @@ const broadcast = (data) =>
 
 const router = new Router();
 
-router.get("/game", (ctx) => {
+router.get("/games", (ctx) => {
   ctx.response.body = games;
   ctx.response.status = 200;
 });
 
-router.get("/game/:id", async (ctx) => {
+router.get("/games/:id", async (ctx) => {
   const gameId = ctx.params.id;
   const game = games.find((g) => gameId === g.id);
 
@@ -126,11 +126,11 @@ const createGame = async (ctx) => {
   broadcast({ event: "created", payload: { game } });
 };
 
-router.post("/game", async (ctx) => {
+router.post("/games", async (ctx) => {
   await createGame(ctx);
 });
 
-router.put("/game/:id", async (ctx) => {
+router.put("/games/:id", async (ctx) => {
   const id = ctx.params.id;
   const game = ctx.request.body;
   const gameId = game.id;
@@ -185,7 +185,7 @@ router.put("/game/:id", async (ctx) => {
   broadcast({ event: "updated", payload: { game } });
 });
 
-router.del("/game/:id", (ctx) => {
+router.del("/games/:id", (ctx) => {
   const id = ctx.params.id;
   const index = games.findIndex((g) => id === g.id);
 
