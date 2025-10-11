@@ -1,31 +1,79 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ---- Node / JavaScript ----
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# production
-/dist
-
-# misc
-.DS_Store
+# ---- Environment ----
+.env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-/.nx
-/.nx/cache
-/.vscode/*
+
+# ---- Logs ----
+logs/
+*.log
+
+# ---- Build outputs ----
+dist/
+build/
+coverage/
+.turbo/
+.parcel-cache/
+.vite/
+
+# ---- Vite / Frontend ----
+frontend/dist/
+frontend/build/
+
+# ---- Ionic / Capacitor ----
+android/
+ios/
+www/
+.capacitor/
+capacitor.config.ts
+capacitor.config.json
+
+# ---- IDEs ----
+.vscode/
+.vscode/*
 !/.vscode/extensions.json
-.idea
+.idea/
+*.iml
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# ---- OS generated files ----
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Optional eslint cache
+# ---- TypeScript ----
+*.tsbuildinfo
+
+# ---- Testing / Cypress ----
+.cypress/
+**/cypress/videos/
+**/cypress/screenshots/
+
+# ---- Misc / runtime ----
+*.pid
+*.seed
+*.tgz
+*.sock
+
+# ---- ESLint cache ----
 .eslintcache
+
+# ---- Backend / Frontend specific ----
+backend/dist/
+
+# Ignore local android studio properties
+android/**/local.properties
+
+# Keep .gitignore itself
+!/.gitignore
