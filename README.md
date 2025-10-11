@@ -105,15 +105,6 @@ WebSocket:
   npm start
   ```
 
-- ESM vs CommonJS errors (import/require mix):
-
-  - If Node throws an error about module types or `The requested module 'ws' does not provide an export named 'OPEN'`, make sure the backend uses a consistent module system.
-  - Two options:
-    - Use ESM: add `"type": "module"` to `backend/package.json` and use `import` statements. With `ws` use `import { WebSocketServer } from 'ws'` and reference `client.readyState === 1` (or import the `WebSocket` class and use `WebSocket.OPEN`).
-    - Use CommonJS: remove `"type": "module"` and use `require()` everywhere and `const WebSocket = require('ws');` then check `client.readyState === WebSocket.OPEN`.
-
-- PowerShell path `cd /d` issue: when switching drives in PowerShell use `Set-Location` or `cd d:\path` (PowerShell allows `Set-Location -Path D:\path`) — for simple use `cmd.exe` where `cd /d` works.
-
 ---
 
 ## Development notes
@@ -122,13 +113,3 @@ WebSocket:
 - The backend uses Koa with `@koa/router`, `koa-bodyparser` and `@koa/cors`.
 
 ---
-
-## Contact / next steps
-
-If you want, I can:
-
-- Apply the ESM fix to `backend/src/index.js` and `backend/package.json` and verify the server runs.
-- Convert the backend entirely to CommonJS instead.
-- Add a small Postman/curl collection or a simple frontend page to exercise the WebSocket events.
-
-Tell me which you'd prefer and I will proceed.
