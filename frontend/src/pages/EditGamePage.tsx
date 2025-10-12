@@ -33,9 +33,10 @@ const EditGamePage = () => {
   const [isCracked, setIsCracked] = useState(false);
   const [game, setGame] = useState<Game | undefined>(undefined);
 
+  const existingGame = games?.find((g) => g.id === id);
+
   useEffect(() => {
     log("useEffect");
-    const existingGame = games?.find((g) => g.id === id);
 
     if (existingGame) {
       setName(existingGame.name);
@@ -45,7 +46,7 @@ const EditGamePage = () => {
     }
 
     setGame(existingGame);
-  }, [games, id]);
+  }, [existingGame, id]);
 
   const handleSave = () => {
     const editedGame = game

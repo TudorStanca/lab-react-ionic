@@ -91,7 +91,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     };
   };
 
-  const saveItemCallback = async (game: Game) => {
+  const saveGameCallback = async (game: Game) => {
     try {
       log("saveGame started");
       dispatch({ type: SAVE_GAMES_STARTED });
@@ -139,7 +139,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   useEffect(getGamesEffect, []);
   useEffect(wsEffect, []);
 
-  const saveGame = useCallback<SaveGameFunctionType>(saveItemCallback, []);
+  const saveGame = useCallback<SaveGameFunctionType>(saveGameCallback, []);
   const value = { games, fetching, fetchingError, saving, savingError, saveGame };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
