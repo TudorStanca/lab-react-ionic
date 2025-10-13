@@ -1,115 +1,112 @@
-# lab-react-ionic
+# Lab: React + Ionic (mobile)
 
-Small demo project combining an Express-like Koa backend (with WebSocket updates) and an Ionic + React + Vite frontend.
+A small example Ionic + React front-end with a lightweight Koa-based backend and a WebSocket server. The app demonstrates CRUD operations for a simple `Game` model and realtime updates via WebSockets.
 
-This README explains the repository layout and how to run both backend and frontend on Windows.
+## Contents
 
----
+- `frontend/` — Ionic React app (Vite + TypeScript)
+- `backend/` — Koa HTTP server with WebSocket (`ws`) support
 
-## Repository layout
+## Quick start (Windows PowerShell)
 
-- `backend/` — Node.js Koa backend providing a small REST API plus WebSocket push updates.
+Prerequisites
 
-  - `package.json` — backend dependencies and start script
-  - `src/index.js` — the server entry point
+- Node.js 18+ (recommended)
+- npm (comes with Node) or a compatible package manager
 
-- `frontend/` — Ionic + React application built with Vite
-  - `package.json` — frontend scripts
-  - `src/` — React sources
+Install and run backend and frontend in separate terminals.
 
----
-
-## Prerequisites
-
-- Node.js 18+ (the project was tested with Node 22.x)
-- npm (comes with Node) or pnpm/yarn if you prefer
-- (Optional) Android Studio / Xcode if you intend to run mobile builds
-
-On Windows: run commands in Command Prompt (cmd.exe) or PowerShell. If you use PowerShell and see an error about `npm.ps1` being disabled, see Troubleshooting below.
-
----
-
-## Run backend (development)
-
-1. Open a terminal in the `backend` folder.
-2. Install dependencies:
+1. Install & run the backend
 
 ```powershell
 cd backend
 npm install
-```
-
-3. Start the backend (it uses `nodemon` so it will restart on changes):
-
-```powershell
 npm start
 ```
 
-The server listens on port `3000` by default and exposes a small REST API and a WebSocket server.
+The backend listens on port `3000` by default.
 
----
-
-## Run frontend (development)
-
-1. Open a terminal in the `frontend` folder.
-2. Install dependencies and start dev server:
+2. Install & run the frontend
 
 ```powershell
 cd frontend
 npm install
-npm run dev
+npm install @ionic/cli
+npx ionic serve
 ```
 
-The frontend uses Vite; by default it will run on `http://localhost:5173` (or another port if 5173 is taken).
+The frontend uses Vite; by default it will run on `http://localhost:5173` (or a similar free port).
 
-If the frontend needs the backend API to be running, start the backend first.
+## Backend API
 
----
+Base URL: http://localhost:3000
 
-## Backend API (quick reference)
+Model: Game
 
-Base URL: `http://localhost:3000`
+A Game has the following shape (JSON):
 
-Endpoints:
+```json
+{
+  "id": "<uuid>",
+  "name": "Game 1",
+  "price": 10,
+  "launchDate": "2025-10-13T12:00:00.000Z",
+  "isCracked": false,
+  "version": 1
+}
+```
 
-- `GET /item` — returns the list of items
-- `GET /item/:id` — returns a single item or 404
-- `POST /item` — create item; body must contain `text` field
-- `PUT /item/:id` — update item (uses version/ETag semantics)
-- `DELETE /item/:id` — delete item
+Validation (server-side rules)
 
-WebSocket:
+- `name`: required
+- `launchDate`: required, must be a valid date (ISO)
+- `price`: required, must be >= 0
+- `isCracked`: must not be null
 
-- The backend opens a WebSocket server on the same HTTP server (same port). It broadcasts events when items are created/updated/deleted.
-- Broadcast message format:
-  ```json
-  { "event": "created|updated|deleted", "payload": { "item": { ... } } }
-  ```
+Endpoints
 
----
+- GET /games
 
-## Troubleshooting
+  - Returns: 200 + array of games
 
-- PowerShell `npm.ps1` execution error:
+- GET /games/:id
 
-  - If you see `npm.ps1 cannot be loaded because running scripts is disabled on this system`, run npm from `cmd.exe` or change PowerShell execution policy for the current user:
+  - Returns: 200 + game or 404 if not found
 
-  ```powershell
-  Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-  ```
+- POST /games
 
-  - Alternatively run commands in Command Prompt (cmd.exe):
+  - Body: Game JSON (without id/version)
+  - Returns: 201 + created game (id and version assigned)
+  - Validation errors return 400 with message(s)
 
-  ```cmd
-  cd backend
-  npm start
-  ```
+- PUT /games/:id
 
----
+  - Body: full Game JSON (must include `id` and `version`)
+  - The URL `:id` and body `id` must match
+  - Uses an optimistic concurrency check: the server reads the integer version from the `ETag` header (if present) or from the `version` in the body. If a lower version is provided than the server's current version, the server returns 409 (Version conflict).
+  - Returns: 200 + updated game or 400/409 on errors
 
-## Development notes
+- DELETE /games/:id
+  - Returns: 204 (no content). If the game existed, the server broadcasts the deletion over WebSocket.
 
-- The backend seeds a few example items and periodically (every 5s) adds new items and broadcasts creation events over WebSocket.
-- The backend uses Koa with `@koa/router`, `koa-bodyparser` and `@koa/cors`.
+Notes
 
----
+- The server sets simple JSON responses and uses HTTP status codes to indicate success or specific errors.
+- CORS is enabled so the frontend can talk to the backend during local development.
+
+## WebSocket (realtime)
+
+The backend creates a WebSocket server on the same HTTP server (port `3000`). Clients can connect and will receive JSON messages each time a game is created, updated or deleted.
+
+Event envelope
+
+```json
+{
+  "event": "created|updated|deleted",
+  "payload": { "game": { ... } }
+}
+```
+
+## Contributing
+
+This is a small educational project. Feel free to open issues or PRs to add features, improve validation, add auth, or containerize the services.

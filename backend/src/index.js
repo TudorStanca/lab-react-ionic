@@ -211,7 +211,7 @@ setInterval(() => {
   games.push(game);
   console.log(`New game: ${game.name}`);
   broadcast({ event: "created", payload: { game } });
-}, 5000);
+}, 10000);
 
 app.use(router.routes());
 app.use(router.allowedMethods());

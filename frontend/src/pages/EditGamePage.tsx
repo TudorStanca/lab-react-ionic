@@ -32,21 +32,24 @@ const EditGamePage = () => {
   const [launchDate, setLaunchDate] = useState("");
   const [isCracked, setIsCracked] = useState(false);
   const [game, setGame] = useState<Game | undefined>(undefined);
-
-  const existingGame = games?.find((g) => g.id === id);
+  const [isDirty, setIsDirty] = useState<boolean>(false);
 
   useEffect(() => {
     log("useEffect");
+    const existingGame = games?.find((g) => g.id === id);
 
-    if (existingGame) {
-      setName(existingGame.name);
-      setPrice(existingGame.price);
-      setLaunchDate(existingGame.launchDate);
-      setIsCracked(existingGame.isCracked);
+    if (!isDirty) {
+      if (existingGame) {
+        setName(existingGame.name);
+        setPrice(existingGame.price);
+        setLaunchDate(existingGame.launchDate);
+        setIsCracked(existingGame.isCracked);
+        setIsDirty(false);
+      }
     }
 
     setGame(existingGame);
-  }, [existingGame, id]);
+  }, [games, id, isDirty]);
 
   const handleSave = () => {
     const editedGame = game
@@ -82,22 +85,47 @@ const EditGamePage = () => {
       <IonContent>
         <IonItem>
           <IonLabel position="stacked">Name</IonLabel>
-          <IonInput value={name} onIonChange={(e) => setName(e.detail.value ?? "")} />
+          <IonInput
+            value={name}
+            onIonChange={(e) => {
+              setName(e.detail.value ?? "");
+              setIsDirty(true);
+            }}
+          />
         </IonItem>
 
         <IonItem>
           <IonLabel position="stacked">Price</IonLabel>
-          <IonInput type="number" value={String(price)} onIonChange={(e) => setPrice(Number(e.detail.value) || 0)} />
+          <IonInput
+            type="number"
+            value={String(price)}
+            onIonChange={(e) => {
+              setPrice(Number(e.detail.value) || 0);
+              setIsDirty(true);
+            }}
+          />
         </IonItem>
 
         <IonItem>
           <IonLabel position="stacked">Launch Date</IonLabel>
-          <IonDatetime value={launchDate} onIonChange={(e) => setLaunchDate((e.detail.value as string) ?? "")} />
+          <IonDatetime
+            value={launchDate}
+            onIonChange={(e) => {
+              setLaunchDate((e.detail.value as string) ?? "");
+              setIsDirty(true);
+            }}
+          />
         </IonItem>
 
         <IonItem>
           <IonLabel>Is Cracked</IonLabel>
-          <IonCheckbox checked={isCracked} onIonChange={(e) => setIsCracked(Boolean(e.detail.checked))} />
+          <IonCheckbox
+            checked={isCracked}
+            onIonChange={(e) => {
+              setIsCracked(Boolean(e.detail.checked));
+              setIsDirty(true);
+            }}
+          />
         </IonItem>
         <IonLoading isOpen={saving} />
         {savingError && <div>{handleApiError(savingError) || "Failed to save game."}</div>}
