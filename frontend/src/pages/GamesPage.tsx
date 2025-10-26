@@ -12,6 +12,7 @@ import {
   IonPage,
   IonTitle,
   IonToolbar,
+  IonLabel,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
@@ -19,11 +20,14 @@ import GameItem from "../components/GameItem";
 import { useGames } from "../contexts/GameContext";
 import { handleApiError } from "../services/ErrorHandler";
 import { useAuth } from "../contexts/AuthContext";
+import { useNetwork } from "../hooks/useNetwork";
 
 const GamesPage = () => {
   const { games, fetching, fetchingError, loadMore } = useGames();
   const { logout, username } = useAuth();
   const history = useHistory();
+
+  const { networkStatus } = useNetwork();
 
   const handleLogout = () => {
     logout();
@@ -39,6 +43,9 @@ const GamesPage = () => {
             Logout
           </IonButton>
         </IonToolbar>
+        <IonLabel>
+          <p>Network status: {networkStatus.connected ? 'Online' : 'Offline'}</p>
+        </IonLabel>
       </IonHeader>
       <IonContent>
         <IonLoading isOpen={fetching} message="Fetching games" />
