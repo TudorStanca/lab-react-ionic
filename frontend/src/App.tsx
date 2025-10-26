@@ -31,23 +31,28 @@ import "@ionic/react/css/palettes/dark.system.css";
 import GameProvider from "./contexts/GameProvider";
 import GamesPage from "./pages/GamesPage";
 import EditGamePage from "./pages/EditGamePage";
+import LoginPage from "./pages/LoginPage";
+import AuthProvider from "./contexts/AuthProvider";
 
 setupIonicReact();
 
 const App: React.FC = () => (
   <IonApp>
-    <GameProvider>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <Route exact path="/games" component={GamesPage}></Route>
-          <Route exact path="/game" component={EditGamePage}></Route>
-          <Route exact path="/game/:id" component={EditGamePage}></Route>
-          <Route exact path="/">
-            <Redirect to="/games" />
-          </Route>
-        </IonRouterOutlet>
-      </IonReactRouter>
-    </GameProvider>
+    <IonReactRouter>
+      <IonRouterOutlet>
+        <AuthProvider>
+          <Route exact path="/login" component={LoginPage} />
+          <GameProvider>
+            <Route exact path="/games" component={GamesPage}></Route>
+            <Route exact path="/game" component={EditGamePage}></Route>
+            <Route exact path="/game/:id" component={EditGamePage}></Route>
+            <Route exact path="/">
+              <Redirect to="/login" />
+            </Route>
+          </GameProvider>
+        </AuthProvider>
+      </IonRouterOutlet>
+    </IonReactRouter>
   </IonApp>
 );
 

@@ -5,21 +5,32 @@ import { getLogger } from "../utils/AppLogger";
 const log = getLogger("GameApi");
 
 interface MessageData {
-  event: string;
+  type: string;
   payload: {
     game: Game;
   };
 }
 
 const api = axios.create({
-  baseURL: "http://localhost:3000",
+  baseURL: "http://localhost:3000/api/games",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  return config;
+});
+
 export const getGames = async (): Promise<Game[]> => {
-  const response = await api.get<Game[]>("/games");
+  const response = await api.get<Game[]>("/");
 
   log("getGames response:", response);
 
@@ -27,7 +38,7 @@ export const getGames = async (): Promise<Game[]> => {
 };
 
 export const getGameById = async (id: string): Promise<Game> => {
-  const response = await api.get<Game>(`/games/${id}`);
+  const response = await api.get<Game>(`/${id}`);
 
   log("getGameById response:", response);
 
@@ -35,7 +46,7 @@ export const getGameById = async (id: string): Promise<Game> => {
 };
 
 export const createGame = async (game: Game): Promise<Game> => {
-  const response = await api.post<Game>("/games", game);
+  const response = await api.post<Game>("/", game);
 
   log("createGame response:", response);
 
@@ -43,7 +54,7 @@ export const createGame = async (game: Game): Promise<Game> => {
 };
 
 export const updateGame = async (id: string, game: Game): Promise<Game> => {
-  const response = await api.put<Game>(`/games/${id}`, game, {
+  const response = await api.put<Game>(`/${id}`, game, {
     headers: {
       ETag: `${game.version}`,
     },
@@ -55,7 +66,7 @@ export const updateGame = async (id: string, game: Game): Promise<Game> => {
 };
 
 export const deleteGame = async (id: string): Promise<void> => {
-  await api.delete(`/games/${id}`);
+  await api.delete(`/${id}`);
 
   log("deleteGame completed for id:", id);
 };
@@ -64,6 +75,11 @@ export const newWebSocket = (onMessage: (data: MessageData) => void) => {
   const ws = new WebSocket(`ws://localhost:3000`);
   ws.onopen = () => {
     log("web socket onopen");
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      ws.send(JSON.stringify({ type: "authorization", payload: { token } }));
+    }
   };
   ws.onclose = () => {
     log("web socket onclose");

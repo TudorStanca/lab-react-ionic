@@ -9,7 +9,7 @@ interface GameItemProps {
 
 const GameItem = ({ game, onEdit }: GameItemProps) => {
   return (
-    <IonItem onClick={() => onEdit(game.id)}>
+    <IonItem onClick={() => onEdit(game._id)}>
       <IonLabel>
         <h2>{game.name}</h2>
         <p>Price: ${game.price.toFixed(2)}</p>

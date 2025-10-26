@@ -1,4 +1,5 @@
 import {
+  IonButton,
   IonContent,
   IonFab,
   IonFabButton,
@@ -15,16 +16,26 @@ import { useHistory } from "react-router-dom";
 import GameItem from "../components/GameItem";
 import { useGames } from "../contexts/GameContext";
 import { handleApiError } from "../services/ErrorHandler";
+import { useAuth } from "../contexts/AuthContext";
 
 const GamesPage = () => {
   const { games, fetching, fetchingError } = useGames();
+  const { logout, username } = useAuth();
   const history = useHistory();
+
+  const handleLogout = () => {
+    logout();
+    history.replace("/login");
+  };
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>My Game App</IonTitle>
+          <IonTitle>{username} Game App</IonTitle>
+          <IonButton size="small" fill="clear" onClick={handleLogout}>
+            Logout
+          </IonButton>
         </IonToolbar>
       </IonHeader>
       <IonContent>
@@ -32,7 +43,7 @@ const GamesPage = () => {
         {games && (
           <IonList>
             {games.map((game) => (
-              <GameItem key={game.id} game={game} onEdit={(id) => history.push(`/game/${id}`)} />
+              <GameItem key={game._id} game={game} onEdit={(id) => history.push(`/game/${id}`)} />
             ))}
           </IonList>
         )}

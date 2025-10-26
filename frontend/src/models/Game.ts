@@ -1,5 +1,5 @@
 interface Game {
-  id?: string;
+  _id?: string;
   name: string;
   price: number;
   launchDate: string;

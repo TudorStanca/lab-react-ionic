@@ -36,7 +36,7 @@ const EditGamePage = () => {
 
   useEffect(() => {
     log("useEffect");
-    const existingGame = games?.find((g) => g.id === id);
+    const existingGame = games?.find((g) => g._id === id);
 
     if (!isDirty) {
       if (existingGame) {

@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useReducer } from "react";
+import { ReactNode, useCallback, useEffect, useReducer } from "react";
 import Game from "../models/Game";
 import { createGame, getGames, newWebSocket, updateGame } from "../services/GameApi";
 import GameContext, { GamesState, initialGameState, SaveGameFunctionType } from "./GameContext";
 import { getLogger } from "../utils/AppLogger";
 import { handleApiError } from "../services/ErrorHandler";
+import { useAuth } from "./AuthContext";
 
 const log = getLogger("GameProvider");
 
 interface GameProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 const FETCH_GAMES_STARTED = "FETCH_GAMES_STARTED" as const;
@@ -39,7 +40,7 @@ const reducer: (state: GamesState, action: Action) => GamesState = (state, actio
     case SAVE_GAMES_SUCCEEDED: {
       const games = [...(state.games || [])];
       const game = action.payload.game;
-      const index = games.findIndex((g) => g.id === game.id);
+      const index = games.findIndex((g) => g._id === game._id);
 
       if (index === -1) {
         games.splice(0, 0, game);
@@ -56,11 +57,17 @@ const reducer: (state: GamesState, action: Action) => GamesState = (state, actio
   }
 };
 
-export const GameProvider = ({ children }: GameProviderProps) => {
+const GameProvider = ({ children }: GameProviderProps) => {
+  const { token } = useAuth();
+
   const [state, dispatch] = useReducer(reducer, initialGameState);
   const { games, fetching, fetchingError, saving, savingError } = state;
 
   const getGamesEffect = () => {
+    if (!token) {
+      return;
+    }
+
     let canceled = false;
 
     const fetchGames = async () => {
@@ -96,7 +103,7 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       log("saveGame started");
       dispatch({ type: SAVE_GAMES_STARTED });
 
-      const savedGame = await (game.id ? updateGame(game.id, game) : createGame(game));
+      const savedGame = await (game._id ? updateGame(game._id, game) : createGame(game));
 
       log("saveGame succeeded");
       dispatch({ type: SAVE_GAMES_SUCCEEDED, payload: { game: savedGame } });
@@ -109,6 +116,10 @@ export const GameProvider = ({ children }: GameProviderProps) => {
   };
 
   const wsEffect = () => {
+    if (!token) {
+      return;
+    }
+    
     let canceled = false;
     log("wsEffect - connecting");
 
@@ -116,14 +127,17 @@ export const GameProvider = ({ children }: GameProviderProps) => {
       if (canceled) {
         return;
       }
+
+      log(message);
+
       const {
-        event,
+        type,
         payload: { game },
       } = message;
 
-      log(`WebSocket message, game ${event}`);
+      log(`WebSocket message, game ${type}`);
 
-      if (event === "created" || event === "updated") {
+      if (type === "created" || type === "updated") {
         dispatch({ type: SAVE_GAMES_SUCCEEDED, payload: { game } });
       }
     });
@@ -136,8 +150,8 @@ export const GameProvider = ({ children }: GameProviderProps) => {
     };
   };
 
-  useEffect(getGamesEffect, []);
-  useEffect(wsEffect, []);
+  useEffect(getGamesEffect, [token]);
+  useEffect(wsEffect, [token]);
 
   const saveGame = useCallback<SaveGameFunctionType>(saveGameCallback, []);
   const value = { games, fetching, fetchingError, saving, savingError, saveGame };
