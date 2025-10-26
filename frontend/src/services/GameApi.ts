@@ -29,8 +29,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export const getGames = async (skip = 0, limit = 20): Promise<{ games: Game[]; total: number }> => {
-  const response = await api.get<{ games: Game[]; total: number }>(`/?skip=${skip}&limit=${limit}`);
+export const getGames = async (
+  skip = 0,
+  limit = 20,
+  q?: string,
+  isCracked?: boolean
+): Promise<{ games: Game[]; total: number }> => {
+  const params: string[] = [`skip=${skip}`, `limit=${limit}`];
+
+  if (q) params.push(`q=${encodeURIComponent(q)}`);
+  if (typeof isCracked !== "undefined") params.push(`isCracked=${isCracked}`);
+
+  const qs = params.length ? `?${params.join("&")}` : "";
+  const response = await api.get<{ games: Game[]; total: number }>(`/${qs}`);
 
   log("getGames response:", response);
 

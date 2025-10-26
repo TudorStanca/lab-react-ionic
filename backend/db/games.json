@@ -24,3 +24,6 @@
 {"_id":"d36cbaf7-72f1-414f-b16c-8ee1e20b835c","name":"3211","price":32,"launchDate":"2025-10-22T17:18:00","isCracked":false,"version":1,"userId":"2"}
 {"_id":"f5fd7287-8e49-4334-861e-62c2ee060a27","name":"1","price":33,"launchDate":"2025-10-21T17:02:00","isCracked":false,"version":14,"userId":"1"}
 {"_id":"fbce5e9f-c005-4f3d-afbd-8241aafbf31b","name":"2","price":2,"launchDate":"2025-10-09T18:25:00","isCracked":false,"version":1,"userId":"1"}
+{"_id":"f3dd40fe-7087-4fa7-93b9-74998242dd5c","name":"12","price":32,"launchDate":"2025-10-15T19:24:00","isCracked":true,"version":1,"userId":"1"}
+{"_id":"07b55e9d-9e56-426e-b6e9-5aaa6259e463","name":"2","price":32,"launchDate":"2025-10-01T19:24:00","isCracked":true,"version":1,"userId":"1"}
+{"_id":"5a8a0fd9-84c1-4070-af14-89cca25b7906","name":"32","price":32,"launchDate":"2025-10-14T19:25:00","isCracked":true,"version":1,"userId":"1"}

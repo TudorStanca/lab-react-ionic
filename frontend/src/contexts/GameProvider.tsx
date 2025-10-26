@@ -35,7 +35,7 @@ const reducer: (state: GamesState, action: Action) => GamesState = (state, actio
       const existing = state.games || [];
       const incoming = action.payload.games || [];
       const games = action.payload.append ? [...existing, ...incoming] : incoming;
-      const hasMore = typeof action.payload.total === 'number' ? action.payload.total > games.length : true;
+      const hasMore = typeof action.payload.total === "number" ? action.payload.total > games.length : true;
 
       return { ...state, fetching: false, games, hasMore };
     }
@@ -69,6 +69,8 @@ const GameProvider = ({ children }: GameProviderProps) => {
   const [state, dispatch] = useReducer(reducer, initialGameState);
   const { games, fetching, fetchingError, saving, savingError, hasMore } = state;
   const [page, setPage] = useState<number>(0);
+  const [query, setQuery] = useState<string | undefined>(undefined);
+  const [filterIsCracked, setFilterIsCracked] = useState<boolean | undefined>(undefined);
   const pageSize = 15;
 
   const getGamesEffect = () => {
@@ -83,7 +85,7 @@ const GameProvider = ({ children }: GameProviderProps) => {
         if (!append) dispatch({ type: FETCH_GAMES_STARTED });
 
         const skip = pageToLoad * pageSize;
-        const result = await getGames(skip, pageSize);
+        const result = await getGames(skip, pageSize, query, filterIsCracked);
 
         log("fetchGames succeeded", result);
 
@@ -128,7 +130,7 @@ const GameProvider = ({ children }: GameProviderProps) => {
     if (!token) {
       return;
     }
-    
+
     let canceled = false;
     log("wsEffect - connecting");
 
@@ -162,7 +164,7 @@ const GameProvider = ({ children }: GameProviderProps) => {
     };
   };
 
-  useEffect(getGamesEffect, [token, setPage]);
+  useEffect(getGamesEffect, [token, query, filterIsCracked]);
 
   const loadMore = useCallback(async () => {
     if (!token) return;
@@ -173,18 +175,38 @@ const GameProvider = ({ children }: GameProviderProps) => {
 
     try {
       dispatch({ type: FETCH_GAMES_STARTED });
-      const result = await getGames(skip, pageSize);
+      const result = await getGames(skip, pageSize, query, filterIsCracked);
       dispatch({ type: FETCH_GAMES_SUCCEEDED, payload: { games: result.games, append: true, total: result.total } });
       setPage(nextPage);
     } catch (error) {
       dispatch({ type: FETCH_GAMES_FAILED, payload: { error: error as Error } });
     }
-  }, [page, pageSize, token, hasMore]);
+  }, [page, pageSize, token, hasMore, query, filterIsCracked]);
 
   useEffect(wsEffect, [token]);
 
   const saveGame = useCallback<SaveGameFunctionType>(saveGameCallback, []);
-  const value = { games, fetching, fetchingError, saving, savingError, saveGame, loadMore };
+
+  const search = useCallback(async (q?: string, isCracked?: boolean) => {
+    // update filter state; the main fetch effect will run because query/filterIsCracked are dependencies
+    setQuery(q);
+    setFilterIsCracked(isCracked);
+    return Promise.resolve();
+  }, []);
+
+  const value = {
+    games,
+    fetching,
+    fetchingError,
+    saving,
+    savingError,
+    saveGame,
+    loadMore,
+    search,
+    page,
+    pageSize,
+    hasMore,
+  };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };

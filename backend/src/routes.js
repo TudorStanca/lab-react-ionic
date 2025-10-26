@@ -15,9 +15,25 @@ gamesRouter.get("/", async (ctx) => {
   const userId = ctx.state.user._id;
   const skip = Number(ctx.query.skip) || 0;
   const limit = Number(ctx.query.limit) || 20;
+  const q = ctx.query.q ? String(ctx.query.q) : undefined;
+  const isCrackedParam = ctx.query.isCracked;
+
+  const filter = { userId };
+
+  if (q) {
+    filter.name = new RegExp(q, "i");
+  }
+
+  if (typeof isCrackedParam !== "undefined") {
+    if (isCrackedParam === "true") filter.isCracked = true;
+    else if (isCrackedParam === "false") filter.isCracked = false;
+  }
 
   try {
-    const { games, total } = await gameStore.find({ userId }, { skip, limit, sort: { name: 1 } });
+    const { games, total } = await gameStore.find(
+      { userId, ...filter },
+      { skip, limit, sort: { name: 1 } }
+    );
     ctx.response.body = { games, total };
     ctx.response.status = 200;
   } catch (error) {
