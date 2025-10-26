@@ -4,6 +4,7 @@ import Game from "../models/Game";
 export type SaveGameFunctionType = (game: Game) => Promise<void>;
 export type LoadMoreFunctionType = () => Promise<void>;
 export type SearchFunctionType = (q?: string, isCracked?: boolean) => Promise<void>;
+export type RetryPendingFunctionType = () => Promise<void>;
 
 export interface GamesState {
   games?: Game[];
@@ -19,6 +20,8 @@ export interface GamesState {
   saveGame?: SaveGameFunctionType;
   loadMore?: LoadMoreFunctionType;
   search?: SearchFunctionType;
+  pendingCount?: number;
+  retryPending?: RetryPendingFunctionType;
 }
 
 export const initialGameState: GamesState = {
@@ -37,6 +40,10 @@ export const initialGameState: GamesState = {
     throw new Error("GameProvider not mounted");
   },
   search: async () => {
+    throw new Error("GameProvider not mounted");
+  },
+  pendingCount: 0,
+  retryPending: async () => {
     throw new Error("GameProvider not mounted");
   },
 };

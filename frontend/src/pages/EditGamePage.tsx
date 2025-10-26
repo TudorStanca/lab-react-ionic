@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import Game from "../models/Game";
 import { useGames } from "../contexts/GameContext";
 import { handleApiError } from "../services/ErrorHandler";
+import { useNetwork } from "../hooks/useNetwork";
 
 const log = getLogger("EditGamePage");
 
@@ -26,6 +27,7 @@ const EditGamePage = () => {
   const { games, saving, savingError, saveGame } = useGames();
   const history = useHistory();
   const { id } = useParams<{ id?: string }>();
+  const { networkStatus } = useNetwork();
 
   const [name, setName] = useState("");
   const [price, setPrice] = useState(0);
@@ -69,6 +71,11 @@ const EditGamePage = () => {
       })
       .catch((error) => {
         log("Error saving game:", handleApiError(error) || error.message);
+
+        if (networkStatus && networkStatus.connected === false) {
+          history.replace("/games");
+          return;
+        }
       });
   };
 

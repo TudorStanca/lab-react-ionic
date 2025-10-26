@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   IonButton,
   IonContent,
@@ -27,8 +27,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNetwork } from "../hooks/useNetwork";
 
 const GamesPage = () => {
-  const { games, fetching, fetchingError, loadMore } = useGames();
-  const { search } = useGames();
+  const { games, fetching, fetchingError, loadMore, search, pendingCount } = useGames();
   const { logout, username } = useAuth();
   const history = useHistory();
 
@@ -82,6 +81,11 @@ const GamesPage = () => {
       </IonHeader>
       <IonContent>
         <div style={{ padding: "0 12px" }}>
+          {pendingCount && pendingCount > 0 && (
+            <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+              <IonLabel>{pendingCount} item(s) pending to send (will be synced when online)</IonLabel>
+            </div>
+          )}
           <IonSearchbar
             value={q}
             placeholder="Search by name"
