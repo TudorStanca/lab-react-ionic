@@ -329,7 +329,6 @@ const GameProvider = ({ children }: GameProviderProps) => {
 
   useEffect(wsEffect, [token]);
 
-  // Flush pending when we go back online
   useEffect(() => {
     if (networkStatus && networkStatus.connected) {
       flushPendingOffline();
@@ -339,7 +338,6 @@ const GameProvider = ({ children }: GameProviderProps) => {
   const saveGame: SaveGameFunctionType = saveGameCallback;
 
   const search = useCallback(async (q?: string, isCracked?: boolean) => {
-    // update filter state; the main fetch effect will run because query/filterIsCracked are dependencies
     setQuery(q);
     setFilterIsCracked(isCracked);
     return Promise.resolve();
