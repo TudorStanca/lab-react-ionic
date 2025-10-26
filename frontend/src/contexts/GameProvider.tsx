@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useReducer } from "react";
+import { ReactNode, useCallback, useEffect, useReducer, useState } from "react";
 import Game from "../models/Game";
 import { createGame, getGames, newWebSocket, updateGame } from "../services/GameApi";
 import GameContext, { GamesState, initialGameState, SaveGameFunctionType } from "./GameContext";
@@ -21,7 +21,7 @@ const SAVE_GAMES_FAILED = "SAVE_GAMES_FAILED" as const;
 
 type Action =
   | { type: typeof FETCH_GAMES_STARTED }
-  | { type: typeof FETCH_GAMES_SUCCEEDED; payload: { games: Game[] } }
+  | { type: typeof FETCH_GAMES_SUCCEEDED; payload: { games: Game[]; append?: boolean; total?: number } }
   | { type: typeof FETCH_GAMES_FAILED; payload: { error: Error } }
   | { type: typeof SAVE_GAMES_STARTED }
   | { type: typeof SAVE_GAMES_SUCCEEDED; payload: { game: Game } }
@@ -31,8 +31,14 @@ const reducer: (state: GamesState, action: Action) => GamesState = (state, actio
   switch (action.type) {
     case FETCH_GAMES_STARTED:
       return { ...state, fetching: true, fetchingError: null };
-    case FETCH_GAMES_SUCCEEDED:
-      return { ...state, fetching: false, games: action.payload.games };
+    case FETCH_GAMES_SUCCEEDED: {
+      const existing = state.games || [];
+      const incoming = action.payload.games || [];
+      const games = action.payload.append ? [...existing, ...incoming] : incoming;
+      const hasMore = typeof action.payload.total === 'number' ? action.payload.total > games.length : true;
+
+      return { ...state, fetching: false, games, hasMore };
+    }
     case FETCH_GAMES_FAILED:
       return { ...state, fetching: false, fetchingError: action.payload.error };
     case SAVE_GAMES_STARTED:
@@ -61,7 +67,9 @@ const GameProvider = ({ children }: GameProviderProps) => {
   const { token } = useAuth();
 
   const [state, dispatch] = useReducer(reducer, initialGameState);
-  const { games, fetching, fetchingError, saving, savingError } = state;
+  const { games, fetching, fetchingError, saving, savingError, hasMore } = state;
+  const [page, setPage] = useState<number>(0);
+  const pageSize = 15;
 
   const getGamesEffect = () => {
     if (!token) {
@@ -70,17 +78,18 @@ const GameProvider = ({ children }: GameProviderProps) => {
 
     let canceled = false;
 
-    const fetchGames = async () => {
+    const fetchGamesPage = async (pageToLoad = 0, append = false) => {
       try {
-        log("fetchGames started");
-        dispatch({ type: FETCH_GAMES_STARTED });
+        if (!append) dispatch({ type: FETCH_GAMES_STARTED });
 
-        const games = await getGames();
+        const skip = pageToLoad * pageSize;
+        const result = await getGames(skip, pageSize);
 
-        log("fetchGames succeeded");
+        log("fetchGames succeeded", result);
 
         if (!canceled) {
-          dispatch({ type: FETCH_GAMES_SUCCEEDED, payload: { games } });
+          dispatch({ type: FETCH_GAMES_SUCCEEDED, payload: { games: result.games, append, total: result.total } });
+          setPage(pageToLoad);
         }
       } catch (error) {
         log("fetchGames failed", handleApiError(error));
@@ -91,7 +100,7 @@ const GameProvider = ({ children }: GameProviderProps) => {
       }
     };
 
-    fetchGames();
+    fetchGamesPage(0, false);
 
     return () => {
       canceled = true;
@@ -128,16 +137,19 @@ const GameProvider = ({ children }: GameProviderProps) => {
         return;
       }
 
-      log(message);
+      log("ws raw message:", message);
 
-      const {
-        type,
-        payload: { game },
-      } = message;
+      const { type, payload } = message || {};
+      const game = payload && payload.game;
 
-      log(`WebSocket message, game ${type}`);
+      if (!type || !payload) {
+        log("ws: missing type or payload", message);
+        return;
+      }
 
-      if (type === "created" || type === "updated") {
+      log(`WebSocket message, type=${type}`);
+
+      if ((type === "created" || type === "updated") && game) {
         dispatch({ type: SAVE_GAMES_SUCCEEDED, payload: { game } });
       }
     });
@@ -150,11 +162,29 @@ const GameProvider = ({ children }: GameProviderProps) => {
     };
   };
 
-  useEffect(getGamesEffect, [token]);
+  useEffect(getGamesEffect, [token, setPage]);
+
+  const loadMore = useCallback(async () => {
+    if (!token) return;
+    if (!hasMore) return;
+
+    const nextPage = page + 1;
+    const skip = nextPage * pageSize;
+
+    try {
+      dispatch({ type: FETCH_GAMES_STARTED });
+      const result = await getGames(skip, pageSize);
+      dispatch({ type: FETCH_GAMES_SUCCEEDED, payload: { games: result.games, append: true, total: result.total } });
+      setPage(nextPage);
+    } catch (error) {
+      dispatch({ type: FETCH_GAMES_FAILED, payload: { error: error as Error } });
+    }
+  }, [page, pageSize, token, hasMore]);
+
   useEffect(wsEffect, [token]);
 
   const saveGame = useCallback<SaveGameFunctionType>(saveGameCallback, []);
-  const value = { games, fetching, fetchingError, saving, savingError, saveGame };
+  const value = { games, fetching, fetchingError, saving, savingError, saveGame, loadMore };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 };

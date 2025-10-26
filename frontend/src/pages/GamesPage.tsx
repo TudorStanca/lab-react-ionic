@@ -1,6 +1,8 @@
 import {
   IonButton,
   IonContent,
+  IonInfiniteScroll,
+  IonInfiniteScrollContent,
   IonFab,
   IonFabButton,
   IonHeader,
@@ -19,7 +21,7 @@ import { handleApiError } from "../services/ErrorHandler";
 import { useAuth } from "../contexts/AuthContext";
 
 const GamesPage = () => {
-  const { games, fetching, fetchingError } = useGames();
+  const { games, fetching, fetchingError, loadMore } = useGames();
   const { logout, username } = useAuth();
   const history = useHistory();
 
@@ -47,6 +49,18 @@ const GamesPage = () => {
             ))}
           </IonList>
         )}
+
+        <IonInfiniteScroll
+          threshold="100px"
+          onIonInfinite={async (ev) => {
+            if (loadMore) {
+              await loadMore();
+            }
+            (ev.target as HTMLIonInfiniteScrollElement).complete();
+          }}
+        >
+          <IonInfiniteScrollContent loadingText="Loading more games..." />
+        </IonInfiniteScroll>
         {fetchingError && <div>{handleApiError(fetchingError) || "Failed to fetch games"}</div>}
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton onClick={() => history.push("/game")}>

@@ -7,8 +7,23 @@ class GameStore {
     this.store.loadDatabase();
   }
 
-  async find(props) {
-    return this.store.find(props);
+  async find(props, options = {}) {
+    const { skip = 0, limit = 0, sort = {} } = options;
+
+    return new Promise((resolve, reject) => {
+      this.store.count(props, (err, count) => {
+        if (err) return reject(err);
+
+        let cursor = this.store.find(props).sort(sort);
+        if (skip) cursor = cursor.skip(skip);
+        if (limit) cursor = cursor.limit(limit);
+
+        cursor.exec((err2, docs) => {
+          if (err2) return reject(err2);
+          resolve({ games: docs, total: count });
+        });
+      });
+    });
   }
 
   async findOne(props) {

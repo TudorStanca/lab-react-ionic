@@ -13,10 +13,17 @@ export const gamesRouter = new Router();
 
 gamesRouter.get("/", async (ctx) => {
   const userId = ctx.state.user._id;
-  const games = await gameStore.find({ userId });
+  const skip = Number(ctx.query.skip) || 0;
+  const limit = Number(ctx.query.limit) || 20;
 
-  ctx.response.body = games;
-  ctx.response.status = 200;
+  try {
+    const { games, total } = await gameStore.find({ userId }, { skip, limit, sort: { name: 1 } });
+    ctx.response.body = { games, total };
+    ctx.response.status = 200;
+  } catch (error) {
+    ctx.response.body = { message: error.message };
+    ctx.response.status = 500;
+  }
 });
 
 gamesRouter.get("/:id", async (ctx) => {
@@ -53,7 +60,6 @@ const createGame = async (ctx, game, response) => {
     const inserted = await gameStore.insert(dbGame);
     response.body = inserted;
     response.status = 201; // CREATED
-    // send a consistent payload shape: { game }
     broadcast(userId, { type: "created", payload: { game: inserted } });
   } catch (error) {
     response.body = { message: error.message };
@@ -112,7 +118,6 @@ gamesRouter.put("/:id", async (ctx) => {
       dbGame._id = id;
       response.body = dbGame;
       response.status = 200;
-      // send a consistent payload shape: { game }
       broadcast(userId, { type: "updated", payload: { game: dbGame } });
     } else {
       response.body = { message: `Game with id ${id} not found.` };

@@ -29,8 +29,8 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-export const getGames = async (): Promise<Game[]> => {
-  const response = await api.get<Game[]>("/");
+export const getGames = async (skip = 0, limit = 20): Promise<{ games: Game[]; total: number }> => {
+  const response = await api.get<{ games: Game[]; total: number }>(`/?skip=${skip}&limit=${limit}`);
 
   log("getGames response:", response);
 

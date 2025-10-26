@@ -2,23 +2,36 @@ import { createContext, useContext } from "react";
 import Game from "../models/Game";
 
 export type SaveGameFunctionType = (game: Game) => Promise<void>;
+export type LoadMoreFunctionType = () => Promise<void>;
 
 export interface GamesState {
   games?: Game[];
   fetching: boolean;
   fetchingError?: Error | null;
+  
+  page?: number;
+  pageSize?: number;
+  hasMore?: boolean;
+
   saving: boolean;
   savingError?: Error | null;
   saveGame?: SaveGameFunctionType;
+  loadMore?: LoadMoreFunctionType;
 }
 
 export const initialGameState: GamesState = {
   games: [],
   fetching: false,
   fetchingError: null,
+  page: 0,
+  pageSize: 20,
+  hasMore: true,
   saving: false,
   savingError: null,
   saveGame: async () => {
+    throw new Error("GameProvider not mounted");
+  },
+  loadMore: async () => {
     throw new Error("GameProvider not mounted");
   },
 };
