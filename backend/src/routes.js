@@ -69,6 +69,8 @@ const createGame = async (ctx, game, response) => {
       price: game.price,
       launchDate: game.launchDate,
       isCracked: game.isCracked,
+      // persist any sent photo (data URL or path)
+      photo: game.photo,
       version: 1,
       userId: userId,
     });
@@ -124,6 +126,8 @@ gamesRouter.put("/:id", async (ctx) => {
       price: game.price,
       launchDate: game.launchDate,
       isCracked: game.isCracked,
+      // preserve photo when provided
+      photo: game.photo,
       userId: userId,
       version: (existingGame.version || 0) + 1,
     });

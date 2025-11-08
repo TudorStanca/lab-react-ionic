@@ -1,5 +1,14 @@
 class Game {
-  constructor({ id, name, price, launchDate, isCracked, version, userId }) {
+  constructor({
+    id,
+    name,
+    price,
+    launchDate,
+    isCracked,
+    version,
+    userId,
+    photo,
+  }) {
     this._id = id;
     this.name = name;
     this.price = price;
@@ -7,6 +16,8 @@ class Game {
     this.isCracked = isCracked;
     this.version = version;
     this.userId = userId;
+    // optional photo (data URL or path)
+    this.photo = photo;
   }
 }
 

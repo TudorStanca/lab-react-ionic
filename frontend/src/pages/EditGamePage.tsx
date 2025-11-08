@@ -20,6 +20,9 @@ import Game from "../models/Game";
 import { useGames } from "../contexts/GameContext";
 import { handleApiError } from "../services/ErrorHandler";
 import { useNetwork } from "../hooks/useNetwork";
+import { usePhotos } from "../hooks/usePhotos";
+import { useFilesystem } from "../hooks/useFilesystem";
+import { usePreferences } from "../hooks/usePreferences";
 
 const log = getLogger("EditGamePage");
 
@@ -35,6 +38,12 @@ const EditGamePage = () => {
   const [isCracked, setIsCracked] = useState(false);
   const [game, setGame] = useState<Game | undefined>(undefined);
   const [isDirty, setIsDirty] = useState<boolean>(false);
+  const [photo, setPhoto] = useState<string | undefined>(undefined);
+  const [photoError, setPhotoError] = useState<string | undefined>(undefined);
+  const { takePhoto } = usePhotos();
+  const { writeFile, readFile, deleteFile } = useFilesystem();
+  const { get, set } = usePreferences();
+  // localPhotoPath is persisted in Preferences keyed by game id; not kept as component state
 
   useEffect(() => {
     log("useEffect");
@@ -47,16 +56,54 @@ const EditGamePage = () => {
         setLaunchDate(existingGame.launchDate);
         setIsCracked(existingGame.isCracked);
         setIsDirty(false);
+        setPhoto(existingGame?.photo);
+
+        // try to load local copy if available; if not, create local copy from server photo
+        (async () => {
+          try {
+            if (existingGame && existingGame._id) {
+              const key = `localPhotoPath:${existingGame._id}`;
+              const storedPath = await get(key);
+              if (storedPath) {
+                try {
+                  const data = await readFile(storedPath);
+                  setPhoto(`data:image/jpeg;base64,${data}`);
+                  return;
+                } catch {
+                  // failed to read local file; we'll try to recreate from server photo
+                }
+              }
+
+              // if server returned a photo (base64 data URL), save it locally for future use
+              if (existingGame.photo) {
+                const maybeB64 = existingGame.photo.includes(",") ? existingGame.photo.split(",")[1] : existingGame.photo;
+                const filepath = `photo-${existingGame._id}-${Date.now()}.jpeg`;
+                try {
+                  await writeFile(filepath, maybeB64);
+                  await set(key, filepath);
+                } catch {
+                  // ignore write failures
+                }
+              }
+            }
+          } catch {
+            // ignore
+          }
+        })();
       }
     }
 
     setGame(existingGame);
-  }, [games, id, isDirty]);
+  }, [games, id, isDirty, get, readFile, set, writeFile]);
 
   const handleSave = () => {
     const editedGame = game
       ? ({ ...game, name, price, launchDate, isCracked } as Game)
       : ({ name, price, launchDate, isCracked } as Game);
+
+    if (photo) {
+      editedGame.photo = photo;
+    }
 
     if (!saveGame) {
       log("saveGame is not available");
@@ -90,6 +137,53 @@ const EditGamePage = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
+        {game && (
+          <div style={{ padding: 12 }}>
+            {photo && (
+              <div style={{ marginBottom: 12 }}>
+                <img src={photo} alt="game" style={{ maxWidth: "100%", borderRadius: 8 }} />
+              </div>
+            )}
+
+            <div style={{ marginBottom: 12 }}>
+              <IonButton
+                onClick={async () => {
+                  setPhotoError(undefined);
+                  try {
+                      const newPhoto = await takePhoto();
+                      setPhoto(newPhoto.webviewPath);
+                      setIsDirty(true);
+                      // persist local mapping for this game if it has an id
+                      try {
+                        if (game && game._id) {
+                          const key = `localPhotoPath:${game._id}`;
+                          // remove previous local file if present
+                          try {
+                            const prev = await get(key);
+                            if (prev) {
+                              await deleteFile(prev);
+                            }
+                          } catch {
+                            // ignore delete errors
+                          }
+                          await set(key, newPhoto.filepath);
+                        }
+                      } catch {
+                        // ignore preference write failures
+                      }
+                  } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : String(err ?? "Failed to take photo");
+                    setPhotoError(msg);
+                    console.error("takePhoto failed", err);
+                  }
+                }}
+              >
+                Take Photo
+              </IonButton>
+              {photoError && <div style={{ color: "#c00", marginTop: 8 }}>{photoError}</div>}
+            </div>
+          </div>
+        )}
         <IonItem>
           <IonLabel position="stacked">Name</IonLabel>
           <IonInput

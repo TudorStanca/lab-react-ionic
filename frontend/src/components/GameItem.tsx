@@ -1,6 +1,8 @@
 import { IonItem, IonLabel, IonBadge } from "@ionic/react";
 import Game from "../models/Game";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
+import { useFilesystem } from "../hooks/useFilesystem";
+import { usePreferences } from "../hooks/usePreferences";
 
 interface GameItemProps {
   game: Game & { __pending?: boolean };
@@ -8,8 +10,59 @@ interface GameItemProps {
 }
 
 const GameItem = ({ game, onEdit }: GameItemProps) => {
+  const [localPhoto, setLocalPhoto] = useState<string | undefined>(undefined);
+  const { readFile, writeFile } = useFilesystem();
+  const { get, set } = usePreferences();
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!game || !game._id) return;
+      try {
+        const key = `localPhotoPath:${game._id}`;
+        const path = await get(key);
+        if (path) {
+          try {
+            const data = await readFile(path);
+            if (!cancelled) setLocalPhoto(`data:image/jpeg;base64,${data}`);
+            return;
+          } catch {
+            // if read fails, fall back to game.photo and attempt to recreate local copy
+          }
+        }
+
+        // if no local mapping or reading failed, but server has a photo, write it locally
+        if (game.photo) {
+          try {
+            const maybeB64 = game.photo.includes(",") ? game.photo.split(",")[1] : game.photo;
+            const filepath = `photo-${game._id}-${Date.now()}.jpeg`;
+            await writeFile(filepath, maybeB64);
+            await set(key, filepath);
+            if (!cancelled) setLocalPhoto(`data:image/jpeg;base64,${maybeB64}`);
+            return;
+          } catch {
+            // ignore write failures and fall back to game.photo
+          }
+        }
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [game, get, readFile, set, writeFile]);
+
   return (
     <IonItem onClick={() => onEdit(game._id)}>
+      {(localPhoto || game.photo) && (
+        <img
+          src={localPhoto || game.photo}
+          alt={game.name}
+          style={{ width: 64, height: 64, objectFit: "cover", marginRight: 12, borderRadius: 6 }}
+        />
+      )}
       <IonLabel>
         <h2>
           {game.name} {game.__pending && <IonBadge color="medium">offline</IonBadge>}
