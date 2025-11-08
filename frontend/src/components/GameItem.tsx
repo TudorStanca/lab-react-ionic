@@ -3,6 +3,7 @@ import Game from "../models/Game";
 import { memo, useEffect, useState } from "react";
 import { useFilesystem } from "../hooks/useFilesystem";
 import { usePreferences } from "../hooks/usePreferences";
+import { getGamePhoto } from "../services/GameApi";
 
 interface GameItemProps {
   game: Game & { __pending?: boolean };
@@ -32,6 +33,35 @@ const GameItem = ({ game, onEdit }: GameItemProps) => {
         }
 
         if (game.photo) {
+          // if server returned an HTTP URL (server-stored image), fetch it from the API
+          if (
+            typeof game.photo === "string" &&
+            (game.photo.startsWith("http://") ||
+              game.photo.startsWith("https://") ||
+              game.photo.includes("/images/") ||
+              game.photo.includes("/api/games/"))
+          ) {
+            // fetch the image from the backend API with authentication
+            try {
+              const dataUrl = await getGamePhoto(game._id!);
+              if (dataUrl && !cancelled) {
+                setLocalPhoto(dataUrl);
+                // optionally cache it locally
+                try {
+                  const b64 = dataUrl.split(",")[1];
+                  const filepath = `photo-${game._id}-${Date.now()}.jpeg`;
+                  await writeFile(filepath, b64);
+                  await set(key, filepath);
+                } catch {
+                  // ignore cache write failures
+                }
+              }
+            } catch {
+              // if fetch fails, ignore
+            }
+            return;
+          }
+
           try {
             const maybeB64 = game.photo.includes(",") ? game.photo.split(",")[1] : game.photo;
             const filepath = `photo-${game._id}-${Date.now()}.jpeg`;

@@ -57,6 +57,36 @@ export const getGameById = async (id: string): Promise<Game> => {
 };
 
 export const createGame = async (game: Game): Promise<Game> => {
+  // if photo is a data URL, send multipart/form-data with the file
+  if (game.photo && typeof game.photo === "string" && game.photo.startsWith("data:")) {
+    const form = new FormData();
+    form.append("name", String(game.name));
+    form.append("price", String(game.price));
+    form.append("launchDate", String(game.launchDate));
+    form.append("isCracked", String(game.isCracked));
+
+    // convert data URL to File
+    const arr = game.photo.split(",");
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    const ext = mime.includes("png") ? "png" : "jpeg";
+    const file = new File([u8arr], `photo.${ext}`, { type: mime });
+    form.append("photo", file);
+
+    const response = await api.post<FormData, { data: Game }>("/", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    log("createGame response:", response);
+    return response.data;
+  }
+
   const response = await api.post<Game>("/", game);
 
   log("createGame response:", response);
@@ -65,6 +95,36 @@ export const createGame = async (game: Game): Promise<Game> => {
 };
 
 export const updateGame = async (id: string, game: Game): Promise<Game> => {
+  // if photo is a data URL, send multipart/form-data with the file and include version
+  if (game.photo && typeof game.photo === "string" && game.photo.startsWith("data:")) {
+    const form = new FormData();
+    form.append("name", String(game.name));
+    form.append("price", String(game.price));
+    form.append("launchDate", String(game.launchDate));
+    form.append("isCracked", String(game.isCracked));
+    if (typeof game.version !== "undefined") form.append("version", String(game.version));
+
+    const arr = game.photo.split(",");
+    const mimeMatch = arr[0].match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    const ext = mime.includes("png") ? "png" : "jpeg";
+    const file = new File([u8arr], `photo.${ext}`, { type: mime });
+    form.append("photo", file);
+
+    const response = await api.put<FormData, { data: Game }>(`/${id}`, form, {
+      headers: { ETag: `${game.version}`, "Content-Type": "multipart/form-data" },
+    });
+
+    log("updateGame response:", response);
+    return response.data;
+  }
+
   const response = await api.put<Game>(`/${id}`, game, {
     headers: {
       ETag: `${game.version}`,
@@ -80,6 +140,26 @@ export const deleteGame = async (id: string): Promise<void> => {
   await api.delete(`/${id}`);
 
   log("deleteGame completed for id:", id);
+};
+
+export const getGamePhoto = async (id: string): Promise<string | null> => {
+  try {
+    const response = await api.get(`/${id}/photo`, {
+      responseType: "blob",
+    });
+
+    // Convert blob to data URL
+    const blob = response.data;
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    log("Failed to fetch photo for game:", id, error);
+    return null;
+  }
 };
 
 export const newWebSocket = (onMessage: (data: MessageData) => void) => {

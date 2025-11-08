@@ -8,7 +8,7 @@ import Router from "@koa/router";
 import { authRouter } from "./auth.js";
 import { gamesRouter } from "./routes.js";
 import { exceptionHandler, timingLogger } from "./utils.js";
-import jwt from 'koa-jwt';
+import jwt from "koa-jwt";
 import { jwtConfig } from "./utils.js";
 
 const app = new Koa();
@@ -17,7 +17,14 @@ const server = http.createServer(app.callback());
 const wss = new WebSocketServer({ server });
 initWss(wss);
 
-app.use(bodyparser());
+const bp = bodyparser();
+app.use(async (ctx, next) => {
+  if (ctx.path && ctx.path.startsWith("/api/games")) {
+    return next();
+  }
+  return bp(ctx, next);
+});
+
 app.use(cors());
 app.use(exceptionHandler);
 app.use(timingLogger);
@@ -31,9 +38,11 @@ publicApiRouter.use("/auth", authRouter.routes());
 app.use(publicApiRouter.routes());
 app.use(publicApiRouter.allowedMethods());
 
-app.use(jwt(jwtConfig).unless({
-    path: [/^\/api\/auth(\/|$)/],
-}));
+app.use(
+  jwt(jwtConfig).unless({
+    path: [/^\/api\/auth(\/|$)/, /^\/api\/games\/[^/]+\/photo$/],
+  })
+);
 
 const protectedApiRouter = new Router({ prefix });
 protectedApiRouter.use("/games", gamesRouter.routes());

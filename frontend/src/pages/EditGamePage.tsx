@@ -23,6 +23,7 @@ import { useNetwork } from "../hooks/useNetwork";
 import { usePhotos } from "../hooks/usePhotos";
 import { useFilesystem } from "../hooks/useFilesystem";
 import { usePreferences } from "../hooks/usePreferences";
+import { getGamePhoto } from "../services/GameApi";
 
 const log = getLogger("EditGamePage");
 
@@ -73,13 +74,47 @@ const EditGamePage = () => {
               }
 
               if (existingGame.photo) {
-                const maybeB64 = existingGame.photo.includes(",") ? existingGame.photo.split(",")[1] : existingGame.photo;
-                const filepath = `photo-${existingGame._id}-${Date.now()}.jpeg`;
-                try {
-                  await writeFile(filepath, maybeB64);
-                  await set(key, filepath);
-                } catch {
-                  // ignore write failures
+                // if server returned an HTTP URL (server-stored image), fetch it from the API
+                if (
+                  typeof existingGame.photo === "string" &&
+                  (existingGame.photo.startsWith("http://") ||
+                    existingGame.photo.startsWith("https://") ||
+                    existingGame.photo.includes("/images/") ||
+                    existingGame.photo.includes("/api/games/"))
+                ) {
+                  // fetch the image from the backend API with authentication
+                  try {
+                    const dataUrl = await getGamePhoto(existingGame._id);
+                    if (dataUrl) {
+                      setPhoto(dataUrl);
+                      // optionally cache it locally
+                      try {
+                        const b64 = dataUrl.split(",")[1];
+                        const filepath = `photo-${existingGame._id}-${Date.now()}.jpeg`;
+                        await writeFile(filepath, b64);
+                        await set(key, filepath);
+                      } catch {
+                        // ignore cache write failures
+                      }
+                    }
+                  } catch {
+                    // if fetch fails, ignore
+                  }
+                  return;
+                }
+
+                // only create a local file if the stored photo is a data URL/base64
+                if (typeof existingGame.photo === "string" && existingGame.photo.startsWith("data:")) {
+                  const maybeB64 = existingGame.photo.includes(",")
+                    ? existingGame.photo.split(",")[1]
+                    : existingGame.photo;
+                  const filepath = `photo-${existingGame._id}-${Date.now()}.jpeg`;
+                  try {
+                    await writeFile(filepath, maybeB64);
+                    await set(key, filepath);
+                  } catch {
+                    // ignore write failures
+                  }
                 }
               }
             }
@@ -147,25 +182,25 @@ const EditGamePage = () => {
                 onClick={async () => {
                   setPhotoError(undefined);
                   try {
-                      const newPhoto = await takePhoto();
-                      setPhoto(newPhoto.webviewPath);
-                      setIsDirty(true);
-                      try {
-                        if (game && game._id) {
-                          const key = `localPhotoPath:${game._id}`;
-                          try {
-                            const prev = await get(key);
-                            if (prev) {
-                              await deleteFile(prev);
-                            }
-                          } catch {
-                            // ignore delete errors
+                    const newPhoto = await takePhoto();
+                    setPhoto(newPhoto.webviewPath);
+                    setIsDirty(true);
+                    try {
+                      if (game && game._id) {
+                        const key = `localPhotoPath:${game._id}`;
+                        try {
+                          const prev = await get(key);
+                          if (prev) {
+                            await deleteFile(prev);
                           }
-                          await set(key, newPhoto.filepath);
+                        } catch {
+                          // ignore delete errors
                         }
-                      } catch {
-                        // ignore preference write failures
+                        await set(key, newPhoto.filepath);
                       }
+                    } catch {
+                      // ignore preference write failures
+                    }
                   } catch (err: unknown) {
                     const msg = err instanceof Error ? err.message : String(err ?? "Failed to take photo");
                     setPhotoError(msg);
