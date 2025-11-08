@@ -31,7 +31,6 @@ const GameItem = ({ game, onEdit }: GameItemProps) => {
           }
         }
 
-        // if no local mapping or reading failed, but server has a photo, write it locally
         if (game.photo) {
           try {
             const maybeB64 = game.photo.includes(",") ? game.photo.split(",")[1] : game.photo;

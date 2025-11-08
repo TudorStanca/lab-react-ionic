@@ -43,7 +43,6 @@ const EditGamePage = () => {
   const { takePhoto } = usePhotos();
   const { writeFile, readFile, deleteFile } = useFilesystem();
   const { get, set } = usePreferences();
-  // localPhotoPath is persisted in Preferences keyed by game id; not kept as component state
 
   useEffect(() => {
     log("useEffect");
@@ -58,7 +57,6 @@ const EditGamePage = () => {
         setIsDirty(false);
         setPhoto(existingGame?.photo);
 
-        // try to load local copy if available; if not, create local copy from server photo
         (async () => {
           try {
             if (existingGame && existingGame._id) {
@@ -74,7 +72,6 @@ const EditGamePage = () => {
                 }
               }
 
-              // if server returned a photo (base64 data URL), save it locally for future use
               if (existingGame.photo) {
                 const maybeB64 = existingGame.photo.includes(",") ? existingGame.photo.split(",")[1] : existingGame.photo;
                 const filepath = `photo-${existingGame._id}-${Date.now()}.jpeg`;
@@ -153,11 +150,9 @@ const EditGamePage = () => {
                       const newPhoto = await takePhoto();
                       setPhoto(newPhoto.webviewPath);
                       setIsDirty(true);
-                      // persist local mapping for this game if it has an id
                       try {
                         if (game && game._id) {
                           const key = `localPhotoPath:${game._id}`;
-                          // remove previous local file if present
                           try {
                             const prev = await get(key);
                             if (prev) {
