@@ -26,6 +26,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
     log("Disposing user login data.");
     localStorage.removeItem("token");
     localStorage.removeItem("username");
+    localStorage.removeItem("pendingOfflineGames");
     setState(initialAuthState);
   }, []);
 
