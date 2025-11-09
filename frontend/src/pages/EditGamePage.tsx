@@ -12,10 +12,11 @@ import {
   IonCheckbox,
   IonItem,
   IonLabel,
+  createAnimation,
 } from "@ionic/react";
 import { getLogger } from "../utils/AppLogger";
 import { useHistory, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Game from "../models/Game";
 import { useGames } from "../contexts/GameContext";
 import { handleApiError } from "../services/ErrorHandler";
@@ -47,6 +48,23 @@ const EditGamePage = () => {
   const { takePhoto } = usePhotos();
   const { writeFile, readFile, deleteFile } = useFilesystem();
   const { get, set } = usePreferences();
+
+  // Ref for animated header
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  // Animation for header (slide in from top)
+  useEffect(() => {
+    if (headerRef.current) {
+      const animation = createAnimation()
+        .addElement(headerRef.current)
+        .duration(800)
+        .fromTo("transform", "translateY(-100px)", "translateY(0)")
+        .fromTo("opacity", "0", "1")
+        .easing("ease-out");
+
+      animation.play();
+    }
+  }, [game]);
 
   useEffect(() => {
     log("useEffect");
@@ -176,6 +194,18 @@ const EditGamePage = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
+        <div
+          ref={headerRef}
+          style={{
+            padding: "16px",
+            fontSize: "24px",
+            fontWeight: "bold",
+            textAlign: "center",
+            color: "#3880ff",
+          }}
+        >
+          {game?._id ? "Edit Your Game" : "Create New Game"}
+        </div>
         {game && (
           <div style={{ padding: 12 }}>
             {photo && (
@@ -283,7 +313,10 @@ const EditGamePage = () => {
             }}
           />
         </IonItem>
-        <IonLoading isOpen={saving} />
+        <IonLoading
+          isOpen={saving}
+          message="Saving game..."
+        />
         {savingError && <div>{handleApiError(savingError) || "Failed to save game."}</div>}
       </IonContent>
     </IonPage>

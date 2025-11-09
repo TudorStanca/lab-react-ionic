@@ -17,6 +17,7 @@ import {
   IonLabel,
   IonSegment,
   IonSegmentButton,
+  createAnimation,
 } from "@ionic/react";
 import { add } from "ionicons/icons";
 import { useHistory } from "react-router-dom";
@@ -66,6 +67,30 @@ const GamesPage = () => {
     }
   };
 
+  // Custom loading animation (override)
+  const customLoadingEnter = (baseEl: HTMLElement) => {
+    const backdropAnimation = createAnimation()
+      .addElement(baseEl.querySelector("ion-backdrop")!)
+      .fromTo("opacity", "0.01", "var(--backdrop-opacity)")
+      .duration(300);
+
+    const wrapperAnimation = createAnimation()
+      .addElement(baseEl.querySelector(".loading-wrapper")!)
+      .keyframes([
+        { offset: 0, opacity: "0", transform: "scale(0.5) rotate(0deg)" },
+        { offset: 0.5, opacity: "0.8", transform: "scale(1.1) rotate(180deg)" },
+        { offset: 1, opacity: "1", transform: "scale(1) rotate(360deg)" },
+      ])
+      .duration(500)
+      .easing("ease-in-out");
+
+    return createAnimation().addAnimation([backdropAnimation, wrapperAnimation]);
+  };
+
+  const customLoadingLeave = (baseEl: HTMLElement) => {
+    return customLoadingEnter(baseEl).direction("reverse");
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -108,7 +133,12 @@ const GamesPage = () => {
             </IonSegmentButton>
           </IonSegment>
         </div>
-        <IonLoading isOpen={fetching} message="Fetching games" />
+        <IonLoading
+          isOpen={fetching}
+          message="Fetching games"
+          enterAnimation={customLoadingEnter}
+          leaveAnimation={customLoadingLeave}
+        />
         {games && (
           <IonList>
             {games.map((game) => (
