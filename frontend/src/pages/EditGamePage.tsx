@@ -49,10 +49,8 @@ const EditGamePage = () => {
   const { writeFile, readFile, deleteFile } = useFilesystem();
   const { get, set } = usePreferences();
 
-  // Ref for animated header
   const headerRef = useRef<HTMLDivElement>(null);
 
-  // Animation for header (slide in from top)
   useEffect(() => {
     if (headerRef.current) {
       const animation = createAnimation()
@@ -79,7 +77,6 @@ const EditGamePage = () => {
         setIsDirty(false);
         setPhoto(existingGame?.photo);
 
-        // Load coordinates if available
         if (existingGame.lat !== undefined) setLat(existingGame.lat);
         if (existingGame.lng !== undefined) setLng(existingGame.lng);
 
@@ -99,7 +96,6 @@ const EditGamePage = () => {
               }
 
               if (existingGame.photo) {
-                // if server returned an HTTP URL (server-stored image), fetch it from the API
                 if (
                   typeof existingGame.photo === "string" &&
                   (existingGame.photo.startsWith("http://") ||
@@ -107,7 +103,6 @@ const EditGamePage = () => {
                     existingGame.photo.includes("/images/") ||
                     existingGame.photo.includes("/api/games/"))
                 ) {
-                  // fetch the image from the backend API with authentication
                   try {
                     const dataUrl = await getGamePhoto(existingGame._id);
                     if (dataUrl) {
@@ -128,7 +123,6 @@ const EditGamePage = () => {
                   return;
                 }
 
-                // only create a local file if the stored photo is a data URL/base64
                 if (typeof existingGame.photo === "string" && existingGame.photo.startsWith("data:")) {
                   const maybeB64 = existingGame.photo.includes(",")
                     ? existingGame.photo.split(",")[1]
