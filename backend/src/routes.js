@@ -62,7 +62,6 @@ gamesRouter.get("/:id", async (ctx) => {
   }
 });
 
-// return the raw image file for a game (if stored on server)
 gamesRouter.get("/:id/photo", async (ctx) => {
   const gameId = ctx.params.id;
   console.log("Fetching photo for game:", gameId);
@@ -73,9 +72,6 @@ gamesRouter.get("/:id/photo", async (ctx) => {
     ctx.response.status = 404;
     return;
   }
-
-  // Skip userId check since photo endpoint is public (needed for <img> tags to work)
-  // If you need security, implement a different auth mechanism (e.g., signed URLs)
 
   if (
     !game.photo ||
@@ -92,7 +88,6 @@ gamesRouter.get("/:id/photo", async (ctx) => {
     if (game.photo.includes("/images/")) {
       filename = game.photo.split("/images/")[1];
     } else {
-      // extract id from /api/games/<id>/photo
       const parts = game.photo.split("/api/games/");
       if (parts.length > 1) {
         const rest = parts[1];
@@ -128,10 +123,8 @@ const createGame = async (ctx, game, response) => {
   try {
     const userId = ctx.state.user._id;
 
-    // allow caller to provide an id (used by multipart upload handler), otherwise generate one
     const id = game.id || randomUUID();
 
-    // if client provided a data URL in game.photo, save it to public/images/photo-<id>.<ext>
     let photoUrl = game.photo;
     try {
       if (typeof game.photo === "string" && game.photo.startsWith("data:")) {
@@ -160,6 +153,8 @@ const createGame = async (ctx, game, response) => {
       launchDate: game.launchDate,
       isCracked: game.isCracked,
       photo: photoUrl,
+      lat: game.lat,
+      lng: game.lng,
       version: 1,
       userId: userId,
     });
@@ -174,7 +169,6 @@ const createGame = async (ctx, game, response) => {
   }
 };
 
-// accept multipart/form-data for photo upload
 gamesRouter.post(
   "/",
   koaBody({ multipart: true, formidable: { keepExtensions: true } }),
@@ -182,14 +176,14 @@ gamesRouter.post(
     const body = ctx.request.body || {};
     const files = ctx.request.files || {};
 
-    // allocate deterministic id for the new game so we can name the photo file
     const newId = randomUUID();
     body.id = newId;
 
-    // Convert form-data string values to proper types
     if (body.price !== undefined) body.price = Number(body.price);
     if (body.isCracked !== undefined)
       body.isCracked = body.isCracked === "true" || body.isCracked === true;
+    if (body.lat !== undefined) body.lat = Number(body.lat);
+    if (body.lng !== undefined) body.lng = Number(body.lng);
 
     if (files.photo) {
       try {
@@ -226,6 +220,8 @@ gamesRouter.put(
 
     console.log(`PUT /games/${id} - game:`, game);
     console.log(`PUT /games/${id} - files:`, files);
+    console.log(`PUT /games/${id} - game.lat:`, game.lat, typeof game.lat);
+    console.log(`PUT /games/${id} - game.lng:`, game.lng, typeof game.lng);
 
     if (game._id && game._id !== id) {
       response.body = {
@@ -344,6 +340,8 @@ gamesRouter.put(
         launchDate: game.launchDate,
         isCracked: game.isCracked === "true" || game.isCracked === true,
         photo: photoUrl,
+        lat: game.lat !== undefined ? Number(game.lat) : undefined,
+        lng: game.lng !== undefined ? Number(game.lng) : undefined,
         userId: userId,
         version: (existingGame.version || 0) + 1,
       });

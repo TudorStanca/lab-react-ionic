@@ -33,7 +33,6 @@ const GameItem = ({ game, onEdit }: GameItemProps) => {
         }
 
         if (game.photo) {
-          // if server returned an HTTP URL (server-stored image), fetch it from the API
           if (
             typeof game.photo === "string" &&
             (game.photo.startsWith("http://") ||
@@ -41,12 +40,10 @@ const GameItem = ({ game, onEdit }: GameItemProps) => {
               game.photo.includes("/images/") ||
               game.photo.includes("/api/games/"))
           ) {
-            // fetch the image from the backend API with authentication
             try {
               const dataUrl = await getGamePhoto(game._id!);
               if (dataUrl && !cancelled) {
                 setLocalPhoto(dataUrl);
-                // optionally cache it locally
                 try {
                   const b64 = dataUrl.split(",")[1];
                   const filepath = `photo-${game._id}-${Date.now()}.jpeg`;

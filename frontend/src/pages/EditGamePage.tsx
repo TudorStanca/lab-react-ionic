@@ -24,6 +24,7 @@ import { usePhotos } from "../hooks/usePhotos";
 import { useFilesystem } from "../hooks/useFilesystem";
 import { usePreferences } from "../hooks/usePreferences";
 import { getGamePhoto } from "../services/GameApi";
+import MyMap from "../components/MyMap";
 
 const log = getLogger("EditGamePage");
 
@@ -41,6 +42,8 @@ const EditGamePage = () => {
   const [isDirty, setIsDirty] = useState<boolean>(false);
   const [photo, setPhoto] = useState<string | undefined>(undefined);
   const [photoError, setPhotoError] = useState<string | undefined>(undefined);
+  const [lat, setLat] = useState<number>(46.7712); // Default to Romania
+  const [lng, setLng] = useState<number>(23.6236);
   const { takePhoto } = usePhotos();
   const { writeFile, readFile, deleteFile } = useFilesystem();
   const { get, set } = usePreferences();
@@ -57,6 +60,10 @@ const EditGamePage = () => {
         setIsCracked(existingGame.isCracked);
         setIsDirty(false);
         setPhoto(existingGame?.photo);
+
+        // Load coordinates if available
+        if (existingGame.lat !== undefined) setLat(existingGame.lat);
+        if (existingGame.lng !== undefined) setLng(existingGame.lng);
 
         (async () => {
           try {
@@ -130,8 +137,8 @@ const EditGamePage = () => {
 
   const handleSave = () => {
     const editedGame = game
-      ? ({ ...game, name, price, launchDate, isCracked } as Game)
-      : ({ name, price, launchDate, isCracked } as Game);
+      ? ({ ...game, name, price, launchDate, isCracked, lat, lng } as Game)
+      : ({ name, price, launchDate, isCracked, lat, lng } as Game);
 
     if (photo) {
       editedGame.photo = photo;
@@ -211,6 +218,24 @@ const EditGamePage = () => {
                 Take Photo
               </IonButton>
               {photoError && <div style={{ color: "#c00", marginTop: 8 }}>{photoError}</div>}
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <IonLabel>
+                <h3>Game Location</h3>
+              </IonLabel>
+              <MyMap
+                lat={lat}
+                lng={lng}
+                onMapClick={(newLat, newLng) => {
+                  setLat(newLat);
+                  setLng(newLng);
+                  setIsDirty(true);
+                }}
+              />
+              <p style={{ fontSize: "0.9em", color: "#666", marginTop: 8 }}>
+                Coordinates: {lat.toFixed(4)}, {lng.toFixed(4)}
+              </p>
             </div>
           </div>
         )}

@@ -8,6 +8,8 @@ class Game {
     version,
     userId,
     photo,
+    lat,
+    lng,
   }) {
     this._id = id;
     this.name = name;
@@ -18,6 +20,9 @@ class Game {
     this.userId = userId;
     // optional photo (data URL or path)
     this.photo = photo;
+    // optional coordinates
+    this.lat = lat;
+    this.lng = lng;
   }
 }
 

@@ -57,15 +57,15 @@ export const getGameById = async (id: string): Promise<Game> => {
 };
 
 export const createGame = async (game: Game): Promise<Game> => {
-  // if photo is a data URL, send multipart/form-data with the file
   if (game.photo && typeof game.photo === "string" && game.photo.startsWith("data:")) {
     const form = new FormData();
     form.append("name", String(game.name));
     form.append("price", String(game.price));
     form.append("launchDate", String(game.launchDate));
     form.append("isCracked", String(game.isCracked));
+    if (typeof game.lat !== "undefined") form.append("lat", String(game.lat));
+    if (typeof game.lng !== "undefined") form.append("lng", String(game.lng));
 
-    // convert data URL to File
     const arr = game.photo.split(",");
     const mimeMatch = arr[0].match(/:(.*?);/);
     const mime = mimeMatch ? mimeMatch[1] : "image/jpeg";
@@ -95,7 +95,6 @@ export const createGame = async (game: Game): Promise<Game> => {
 };
 
 export const updateGame = async (id: string, game: Game): Promise<Game> => {
-  // if photo is a data URL, send multipart/form-data with the file and include version
   if (game.photo && typeof game.photo === "string" && game.photo.startsWith("data:")) {
     const form = new FormData();
     form.append("name", String(game.name));
@@ -103,6 +102,8 @@ export const updateGame = async (id: string, game: Game): Promise<Game> => {
     form.append("launchDate", String(game.launchDate));
     form.append("isCracked", String(game.isCracked));
     if (typeof game.version !== "undefined") form.append("version", String(game.version));
+    if (typeof game.lat !== "undefined") form.append("lat", String(game.lat));
+    if (typeof game.lng !== "undefined") form.append("lng", String(game.lng));
 
     const arr = game.photo.split(",");
     const mimeMatch = arr[0].match(/:(.*?);/);
@@ -148,7 +149,6 @@ export const getGamePhoto = async (id: string): Promise<string | null> => {
       responseType: "blob",
     });
 
-    // Convert blob to data URL
     const blob = response.data;
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
