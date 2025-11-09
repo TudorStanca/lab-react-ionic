@@ -8,8 +8,6 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-mapsApiKey.ts
-
 # ---- Environment ----
 .env
 .env.*
@@ -17,6 +15,7 @@ mapsApiKey.ts
 .env.development.local
 .env.test.local
 .env.production.local
+mapsApiKey.ts
 
 # ---- Logs ----
 logs/
