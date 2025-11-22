@@ -1,3 +1,19 @@
+*.iml
+.gradle
+lab-kotlin/local.properties
+lab-kotlin/.idea/caches
+lab-kotlin/.idea/libraries
+lab-kotlin/.idea/modules.xml
+lab-kotlin/.idea/workspace.xml
+lab-kotlin/.idea/navEditor.xml
+lab-kotlin/.idea/assetWizardSettings.xml
+.DS_Store
+lab-kotlin/build
+lab-kotlin/captures
+.externalNativeBuild
+.cxx
+local.properties
+
 # ---- Node / JavaScript ----
 node_modules/
 npm-debug.log*

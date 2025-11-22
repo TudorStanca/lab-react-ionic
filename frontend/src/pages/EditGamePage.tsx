@@ -107,7 +107,6 @@ const EditGamePage = () => {
                     const dataUrl = await getGamePhoto(existingGame._id);
                     if (dataUrl) {
                       setPhoto(dataUrl);
-                      // optionally cache it locally
                       try {
                         const b64 = dataUrl.split(",")[1];
                         const filepath = `photo-${existingGame._id}-${Date.now()}.jpeg`;
