@@ -41,7 +41,7 @@ class ItemViewModel(private val itemId: String?, private val itemRepository: Ite
     fun loadItem() {
         viewModelScope.launch {
             itemRepository.itemStream.collect { items ->
-                if (!(uiState.loadResult is Result.Loading)) {
+                if (uiState.loadResult !is Result.Loading) {
                     return@collect
                 }
                 val item = items.find { it._id == itemId } ?: Item()
@@ -51,12 +51,17 @@ class ItemViewModel(private val itemId: String?, private val itemRepository: Ite
     }
 
 
-    fun saveOrUpdateItem(text: String) {
+    fun saveOrUpdateItem(name: String, price: Int, launchDate: String, isCracked: Boolean) {
         viewModelScope.launch {
             Log.d(TAG, "saveOrUpdateItem...");
             try {
                 uiState = uiState.copy(submitResult = Result.Loading)
-                val item = uiState.item.copy(text = text)
+                val item = uiState.item.copy(
+                    name = name,
+                    price = price,
+                    launchDate = launchDate,
+                    isCracked = isCracked
+                )
                 val savedItem: Item;
                 if (itemId == null) {
                     savedItem = itemRepository.save(item)

@@ -33,11 +33,19 @@ fun ItemList(itemList: List<Item>, onItemClick: OnItemFn, modifier: Modifier) {
 
 @Composable
 fun ItemDetail(item: Item, onItemClick: OnItemFn) {
-//    Log.d("ItemDetail", "recompose id = ${item.id}")
-    Row {
-        ClickableText(text = AnnotatedString(item.text),
-            style = TextStyle(
-                fontSize = 24.sp,
-            ), onClick = { onItemClick(item._id) })
+    Row(modifier = Modifier.padding(vertical = 8.dp)) {
+        ClickableText(
+            text = AnnotatedString(
+                """
+                ${item.name}
+                Price: ${item.price}
+                Launch Date: ${item.launchDate}
+                Cracked: ${item.isCracked}
+                Version: ${item.version}
+                """.trimIndent()
+            ),
+            style = TextStyle(fontSize = 18.sp),
+            onClick = { onItemClick(item._id) }
+        )
     }
 }

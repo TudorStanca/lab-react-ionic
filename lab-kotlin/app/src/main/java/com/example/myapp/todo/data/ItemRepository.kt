@@ -31,7 +31,7 @@ class ItemRepository(
         try {
             val items = itemService.find(authorization = getBearerToken())
             itemDao.deleteAll()
-            items.forEach { itemDao.insert(it) }
+            items.games.forEach { itemDao.insert(it) }
             Log.d(TAG, "refresh succeeded")
         } catch (e: Exception) {
             Log.w(TAG, "refresh failed", e)
@@ -44,11 +44,20 @@ class ItemRepository(
             getItemEvents().collect {
                 Log.d(TAG, "Item event collected $it")
                 if (it.isSuccess) {
-                    val itemEvent = it.getOrNull();
-                    when (itemEvent?.type) {
-                        "created" -> handleItemCreated(itemEvent.payload)
-                        "updated" -> handleItemUpdated(itemEvent.payload)
-                        "deleted" -> handleItemDeleted(itemEvent.payload)
+                    val itemEvent = it.getOrNull()
+                    val game = itemEvent?.payload?.game
+                    if (game == null) {
+                        Log.w(TAG, "Ignoring websocket event with null payload/game: $itemEvent")
+                        return@collect
+                    }
+                    if (game._id.isBlank()) {
+                        Log.w(TAG, "Ignoring websocket event with blank _id: $game")
+                        return@collect
+                    }
+                    when (itemEvent.type) {
+                        "created" -> handleItemCreated(game)
+                        "updated" -> handleItemUpdated(game)
+                        "deleted" -> handleItemDeleted(game)
                     }
                 }
             }
@@ -78,8 +87,7 @@ class ItemRepository(
 
     suspend fun update(item: Item): Item {
         Log.d(TAG, "update $item...")
-        val updatedItem =
-            itemService.update(itemId = item._id, item = item, authorization = getBearerToken())
+        val updatedItem = itemService.update(itemId = item._id, item = item, authorization = getBearerToken())
         Log.d(TAG, "update $item succeeded")
         handleItemUpdated(updatedItem)
         return updatedItem
@@ -88,7 +96,7 @@ class ItemRepository(
     suspend fun save(item: Item): Item {
         Log.d(TAG, "save $item...")
         val createdItem = itemService.create(item = item, authorization = getBearerToken())
-        Log.d(TAG, "save $item succeeded")
+        Log.d(TAG, "save $createdItem succeeded")
         handleItemCreated(createdItem)
         return createdItem
     }

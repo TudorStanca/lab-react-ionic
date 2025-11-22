@@ -20,9 +20,20 @@ abstract class MyAppDatabase : RoomDatabase() {
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Create the new table
-                database.execSQL("CREATE TABLE items_new (_id TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY(_id))")
+                database.execSQL(
+                    "CREATE TABLE items_new (" +
+                            "_id TEXT NOT NULL, " +
+                            "name TEXT NOT NULL, " +
+                            "price REAL NOT NULL DEFAULT 0.0, " +
+                            "launchDate TEXT NOT NULL, " +
+                            "isCracked INTEGER NOT NULL DEFAULT 0, " +
+                            "PRIMARY KEY(_id))"
+                )
                 // Copy the data
-                database.execSQL("INSERT INTO items_new (_id, text) SELECT id, text FROM items")
+                database.execSQL(
+                    "INSERT INTO items_new (_id, name, price, launchDate, isCracked) " +
+                            "SELECT _id, name, price, launchDate, isCracked FROM items"
+                )
                 // Remove the old table
                 database.execSQL("DROP TABLE items")
                 // Change the table name

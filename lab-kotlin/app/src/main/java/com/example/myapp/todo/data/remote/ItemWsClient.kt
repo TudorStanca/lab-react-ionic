@@ -1,10 +1,12 @@
 package com.example.myapp.todo.data.remote
 
 import android.util.Log
-import com.example.myapp.core.TAG
+import com.example.myapp.auth.TAG
 import com.example.myapp.core.data.remote.Api
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
+import org.json.JSONObject
+import com.example.myapp.todo.data.Item
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -36,17 +38,17 @@ class ItemWsClient(private val okHttpClient: OkHttpClient) {
 
     fun closeSocket() {
         Log.d(TAG, "closeSocket")
-        webSocket.close(1000, "");
+        webSocket.close(1000, "")
     }
 
-    inner class ItemWebSocketListener(
+    class ItemWebSocketListener(
         private val onEvent: (itemEvent: ItemEvent?) -> Unit,
         private val onClosed: () -> Unit,
         private val onFailure: () -> Unit
     ) : WebSocketListener() {
+        // Use Moshi without the KotlinJsonAdapterFactory (not available on classpath)
         private val moshi = Moshi.Builder().build()
-        private val itemEventJsonAdapter: JsonAdapter<ItemEvent> =
-            moshi.adapter(ItemEvent::class.java)
+        private val itemEventJsonAdapter: JsonAdapter<ItemEvent> = moshi.adapter(ItemEvent::class.java)
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
             Log.d(TAG, "onOpen")
@@ -54,8 +56,56 @@ class ItemWsClient(private val okHttpClient: OkHttpClient) {
 
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(TAG, "onMessage string $text")
-            val itemEvent = itemEventJsonAdapter.fromJson(text)
-            onEvent(itemEvent)
+            try {
+                // First try robust manual extraction from raw JSON (avoid Moshi Kotlin adapter pitfalls)
+                var finalEvent: ItemEvent? = null
+                try {
+                    val top = JSONObject(text)
+                    val type = top.optString("type", "created")
+                    val payload = top.optJSONObject("payload")
+                    val gameObj = payload?.optJSONObject("game")
+                    if (gameObj != null) {
+                        val id = gameObj.optString("_id", "")
+                        val name = gameObj.optString("name", "")
+                        val price = if (gameObj.has("price")) gameObj.optInt("price") else 0
+                        val launchDate = gameObj.optString("launchDate", "")
+                        val isCracked = if (gameObj.has("isCracked")) gameObj.optBoolean("isCracked") else false
+                        val version = if (gameObj.has("version")) gameObj.optInt("version") else 0
+                        val builtItem = Item(
+                            _id = id,
+                            name = name,
+                            price = price,
+                            launchDate = launchDate,
+                            isCracked = isCracked,
+                            version = version
+                        )
+                        finalEvent = ItemEvent(type, ItemPayload(builtItem))
+                        Log.d(TAG, "Manual parse produced item: $builtItem")
+                    }
+                } catch (je: Exception) {
+                    Log.w(TAG, "Manual JSON parsing failed", je)
+                }
+
+                // If manual extraction failed, fallback to Moshi parsing
+                if (finalEvent == null) {
+                    try {
+                        finalEvent = itemEventJsonAdapter.fromJson(text)
+                        if (finalEvent == null) Log.w(TAG, "Moshi produced null ItemEvent for message")
+                    } catch (me: Exception) {
+                        Log.w(TAG, "Moshi parsing failed", me)
+                    }
+                }
+
+                if (finalEvent == null) {
+                    Log.w(TAG, "Both manual and Moshi parsing failed for message: $text")
+                }
+                onEvent(finalEvent)
+            } catch (e: Exception) {
+                // Log raw message and exception so we can inspect malformed or unexpected messages
+                Log.w(TAG, "Failed to parse websocket message", e)
+                Log.d(TAG, "Raw websocket message: $text")
+                onEvent(null)
+            }
         }
 
         override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
