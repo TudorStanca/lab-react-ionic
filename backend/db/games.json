@@ -1,12 +1,7 @@
-{"_id":"a33e360d-ddae-4e9c-9664-369cb4f4ce44","name":"hsjsna","price":6261,"launchDate":"2025-11-27T00:00:00.000Z","isCracked":true,"version":1,"userId":"2"}
 {"_id":"a3b46210-1991-4eaf-a93c-e9040574f7df","name":"321","price":321,"launchDate":"2025-11-18T23:13:00","isCracked":false,"version":18,"userId":"1","photo":"http://localhost:8100/api/games/a3b46210-1991-4eaf-a93c-e9040574f7df/photo","lat":36.38882701339206,"lng":101.42584331285386}
-{"_id":"af5f1f76-4873-4c46-8a52-6ad836e688f8","name":"321312","price":321,"launchDate":"2025-11-11T00:00:00.000Z","isCracked":true,"version":1,"userId":"2"}
 {"_id":"f0f80364-2d8e-4bd3-9abe-2a18a91a2446","name":"dadas","price":32131,"launchDate":"2025-11-27T23:13:00","isCracked":false,"version":6,"userId":"1","photo":"http://localhost:8100/api/games/f0f80364-2d8e-4bd3-9abe-2a18a91a2446/photo","lat":46.25601249732375,"lng":23.17307748998592}
 {"_id":"fe6e0c7b-20d2-4056-a2e1-57af0ce6faab","name":"dasdasdsad","price":312233,"launchDate":"2025-11-11T23:18:00","isCracked":false,"version":8,"userId":"1","photo":"http://localhost:8100/api/games/fe6e0c7b-20d2-4056-a2e1-57af0ce6faab/photo","lat":46.7712,"lng":23.6236}
-{"_id":"fe6e0c7b-20d2-4056-a2e1-57af0ce6faab","name":"dasdasdsad321","price":312233,"launchDate":"2025-11-11T23:18:00","isCracked":false,"version":9,"userId":"1"}
-{"_id":"3af28649-30c5-4941-95a4-015686a5df3d","name":"321","price":321,"launchDate":"2025-11-18T00:00:00.000Z","isCracked":false,"version":1,"userId":"1"}
-{"_id":"27b472d2-5e7a-4c38-a2eb-64b284812482","name":"321","price":321,"launchDate":"2025-11-18T00:00:00.000Z","isCracked":false,"version":1,"userId":"1"}
-{"_id":"a59c16a4-8f8a-4b3d-a63e-12e5ed02b9e5","name":"dsadas","price":321,"launchDate":"2025-11-11T00:00:00.000Z","isCracked":false,"version":1,"userId":"2"}
-{"_id":"261f1778-f3fd-4674-be41-075ac897d08e","name":"ws","price":321,"launchDate":"2025-11-12T00:00:00.000Z","isCracked":false,"version":1,"userId":"2"}
-{"_id":"261f1778-f3fd-4674-be41-075ac897d08e","name":"ws1","price":321,"launchDate":"2025-11-12T00:00:00.000Z","isCracked":false,"version":2,"userId":"2"}
-{"_id":"8ba51ef7-4fff-40bf-a95a-cb10c73894fc","name":"321","price":321,"launchDate":"2025-11-18T00:00:00.000Z","isCracked":true,"version":1,"userId":"2"}
+{"_id":"3432b941-ddf3-406d-a9a4-91a4b25011db","name":"dasas","price":321,"launchDate":"2025-11-04T00:00:00.000Z","isCracked":true,"version":1,"userId":"2"}
+{"_id":"b243dd6c-397b-44e1-90fd-07c29fe6142e","name":"ws","price":321,"launchDate":"2025-11-26T00:00:00.000Z","isCracked":false,"version":1,"userId":"2"}
+{"_id":"b243dd6c-397b-44e1-90fd-07c29fe6142e","name":"ws1","price":321,"launchDate":"2025-11-26T00:00:00.000Z","isCracked":false,"version":2,"userId":"2"}
+{"_id":"b243dd6c-397b-44e1-90fd-07c29fe6142e","name":"ws1","price":321,"launchDate":"2025-11-26T00:00:00.000Z","isCracked":true,"version":3,"userId":"2"}

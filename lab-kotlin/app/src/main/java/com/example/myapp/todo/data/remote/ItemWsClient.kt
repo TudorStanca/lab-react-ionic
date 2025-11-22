@@ -46,7 +46,6 @@ class ItemWsClient(private val okHttpClient: OkHttpClient) {
         private val onClosed: () -> Unit,
         private val onFailure: () -> Unit
     ) : WebSocketListener() {
-        // Use Moshi without the KotlinJsonAdapterFactory (not available on classpath)
         private val moshi = Moshi.Builder().build()
         private val itemEventJsonAdapter: JsonAdapter<ItemEvent> = moshi.adapter(ItemEvent::class.java)
 
@@ -57,7 +56,6 @@ class ItemWsClient(private val okHttpClient: OkHttpClient) {
         override fun onMessage(webSocket: WebSocket, text: String) {
             Log.d(TAG, "onMessage string $text")
             try {
-                // First try robust manual extraction from raw JSON (avoid Moshi Kotlin adapter pitfalls)
                 var finalEvent: ItemEvent? = null
                 try {
                     val top = JSONObject(text)
@@ -86,7 +84,6 @@ class ItemWsClient(private val okHttpClient: OkHttpClient) {
                     Log.w(TAG, "Manual JSON parsing failed", je)
                 }
 
-                // If manual extraction failed, fallback to Moshi parsing
                 if (finalEvent == null) {
                     try {
                         finalEvent = itemEventJsonAdapter.fromJson(text)
@@ -101,7 +98,6 @@ class ItemWsClient(private val okHttpClient: OkHttpClient) {
                 }
                 onEvent(finalEvent)
             } catch (e: Exception) {
-                // Log raw message and exception so we can inspect malformed or unexpected messages
                 Log.w(TAG, "Failed to parse websocket message", e)
                 Log.d(TAG, "Raw websocket message: $text")
                 onEvent(null)
