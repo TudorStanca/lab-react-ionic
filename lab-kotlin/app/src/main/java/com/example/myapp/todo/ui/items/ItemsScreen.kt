@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapp.R
+import com.example.myapp.todo.ui.MyNetworkStatus
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +34,7 @@ fun ItemsScreen(onItemClick: (id: String?) -> Unit, onAddItem: () -> Unit, onLog
             TopAppBar(
                 title = { Text(text = stringResource(id = R.string.items)) },
                 actions = {
+                    MyNetworkStatus()
                     Button(onClick = onLogout) { Text("Logout") }
                 }
             )
