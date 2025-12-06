@@ -9,6 +9,9 @@ import com.example.myapp.core.TAG
 import com.example.myapp.core.data.remote.Api
 import com.example.myapp.todo.data.local.OperationType
 import com.example.myapp.todo.data.remote.ItemService
+import com.example.myapp.todo.utils.showSyncCompletedNotification
+import com.example.myapp.todo.utils.showSyncInProgressNotification
+import com.example.myapp.todo.utils.dismissSyncNotification
 
 class SyncWorker(
     context: Context,
@@ -35,6 +38,14 @@ class SyncWorker(
             // Get all pending operations
             val pendingOperations = pendingOperationDao.getAllPendingOperations()
             Log.d(TAG, "SyncWorker: Found ${pendingOperations.size} pending operations")
+
+            // If no pending operations, don't show notification
+            if (pendingOperations.isEmpty()) {
+                return Result.success()
+            }
+
+            // Show "syncing in progress" notification
+            showSyncInProgressNotification(applicationContext, pendingOperations.size)
 
             var successCount = 0
             var failureCount = 0
@@ -98,6 +109,18 @@ class SyncWorker(
 
             Log.d(TAG, "SyncWorker: Sync completed - Success: $successCount, Failures: $failureCount")
 
+            // Dismiss "syncing" notification
+            dismissSyncNotification(applicationContext)
+
+            // Show completion notification if any items were synced
+            if (successCount > 0) {
+                showSyncCompletedNotification(
+                    applicationContext,
+                    syncedCount = successCount,
+                    failedCount = failureCount
+                )
+            }
+
             if (failureCount > 0) {
                 // Some operations failed, retry later
                 Result.retry()
@@ -110,6 +133,7 @@ class SyncWorker(
             }
         } catch (e: Exception) {
             Log.e(TAG, "SyncWorker: Sync failed with exception", e)
+            dismissSyncNotification(applicationContext)
             Result.retry()
         }
     }

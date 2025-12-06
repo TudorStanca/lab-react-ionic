@@ -9,12 +9,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import com.example.myapp.core.TAG
+import com.example.myapp.todo.utils.requestNotificationPermission
 import com.example.myapp.ui.theme.MyAppTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Request notification permission for Android 13+
+        requestNotificationPermission(this)
+
         setContent {
             Log.d(TAG, "onCreate")
             MyApp {

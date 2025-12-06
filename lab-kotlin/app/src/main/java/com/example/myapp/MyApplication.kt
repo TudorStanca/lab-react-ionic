@@ -19,6 +19,7 @@ import android.app.Application
 import android.util.Log
 import com.example.myapp.core.AppContainer
 import com.example.myapp.core.TAG
+import com.example.myapp.todo.utils.createSyncNotificationChannel
 import com.example.myapp.todo.workers.NetworkSyncManager
 import com.example.myapp.todo.workers.SyncWorkManager
 
@@ -30,6 +31,9 @@ class MyApplication : Application() {
         super.onCreate()
         Log.d(TAG, "init")
         container = AppContainer(this)
+
+        // Create notification channel for sync notifications
+        createSyncNotificationChannel(this)
 
         // Initialize WorkManager for background sync
         SyncWorkManager.initialize(this)
