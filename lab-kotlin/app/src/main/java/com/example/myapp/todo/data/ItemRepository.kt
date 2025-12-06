@@ -151,9 +151,19 @@ class ItemRepository(
                     trySend(kotlin.Result.success(it))
                 }
             },
-            onClosed = { close() },
-            onFailure = { close() });
-        awaitClose { itemWsClient.closeSocket() }
+            onClosed = {
+                Log.d(TAG, "WebSocket closed, stream ending")
+                close()
+            },
+            onFailure = {
+                Log.e(TAG, "WebSocket failure, stream ending")
+                close()
+            }
+        )
+        awaitClose {
+            Log.d(TAG, "getItemEvents awaitClose - closing WebSocket")
+            itemWsClient.closeSocket()
+        }
     }
 
     suspend fun update(item: Item): Item {
