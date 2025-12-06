@@ -13,6 +13,12 @@ interface ItemDao {
     @Query("SELECT * FROM Items")
     fun getAll(): Flow<List<Item>>
 
+    @Query("SELECT * FROM Items WHERE _id = :id")
+    suspend fun getById(id: String): Item?
+
+    @Query("SELECT * FROM Items WHERE needsSync = 1")
+    suspend fun getItemsNeedingSync(): List<Item>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: Item)
 

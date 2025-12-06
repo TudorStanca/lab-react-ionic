@@ -11,6 +11,7 @@ import com.example.myapp.core.data.remote.Api
 import com.example.myapp.todo.data.ItemRepository
 import com.example.myapp.todo.data.remote.ItemService
 import com.example.myapp.todo.data.remote.ItemWsClient
+import com.example.myapp.todo.utils.ConnectivityManagerNetworkMonitor
 
 val Context.userPreferencesDataStore by preferencesDataStore(
     name = "user_preferences"
@@ -27,8 +28,18 @@ class AppContainer(val context: Context) {
 
     private val database: MyAppDatabase by lazy { MyAppDatabase.getDatabase(context) }
 
+    val connectivityMonitor: ConnectivityManagerNetworkMonitor by lazy {
+        ConnectivityManagerNetworkMonitor(context)
+    }
+
     val itemRepository: ItemRepository by lazy {
-        ItemRepository(itemService, itemWsClient, database.itemDao())
+        ItemRepository(
+            itemService,
+            itemWsClient,
+            database.itemDao(),
+            database.pendingOperationDao(),
+            connectivityMonitor
+        )
     }
 
     val authRepository: AuthRepository by lazy {

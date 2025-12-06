@@ -10,5 +10,6 @@ data class Item(
     val price: Int = 0,
     val launchDate: String = "",
     val isCracked: Boolean = false,
-    val version: Int = 0
+    val version: Int = 0,
+    val needsSync: Boolean = false  // Track if item needs to be synced with server
 )

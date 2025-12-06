@@ -8,10 +8,13 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.myapp.todo.data.Item
 import com.example.myapp.todo.data.local.ItemDao
+import com.example.myapp.todo.data.local.PendingOperation
+import com.example.myapp.todo.data.local.PendingOperationDao
 
-@Database(entities = arrayOf(Item::class), version = 2)
+@Database(entities = arrayOf(Item::class, PendingOperation::class), version = 3)
 abstract class MyAppDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
+    abstract fun pendingOperationDao(): PendingOperationDao
 
     companion object {
         @Volatile
@@ -41,6 +44,23 @@ abstract class MyAppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add needsSync column to items table
+                database.execSQL("ALTER TABLE items ADD COLUMN needsSync INTEGER NOT NULL DEFAULT 0")
+                database.execSQL("ALTER TABLE items ADD COLUMN version INTEGER NOT NULL DEFAULT 0")
+
+                // Create pending_operations table
+                database.execSQL(
+                    "CREATE TABLE pending_operations (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                            "itemId TEXT NOT NULL, " +
+                            "operationType TEXT NOT NULL, " +
+                            "timestamp INTEGER NOT NULL)"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): MyAppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -48,7 +68,7 @@ abstract class MyAppDatabase : RoomDatabase() {
                     MyAppDatabase::class.java,
                     "app_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance

@@ -19,13 +19,23 @@ import android.app.Application
 import android.util.Log
 import com.example.myapp.core.AppContainer
 import com.example.myapp.core.TAG
+import com.example.myapp.todo.workers.NetworkSyncManager
+import com.example.myapp.todo.workers.SyncWorkManager
 
 class MyApplication : Application() {
     lateinit var container: AppContainer
+    private lateinit var networkSyncManager: NetworkSyncManager
 
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "init")
         container = AppContainer(this)
+
+        // Initialize WorkManager for background sync
+        SyncWorkManager.initialize(this)
+
+        // Initialize network monitor to trigger sync when device comes back online
+        networkSyncManager = NetworkSyncManager(this)
+        networkSyncManager.startMonitoring()
     }
 }

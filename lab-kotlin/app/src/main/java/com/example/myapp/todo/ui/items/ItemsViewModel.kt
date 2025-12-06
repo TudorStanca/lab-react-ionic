@@ -10,10 +10,14 @@ import com.example.myapp.MyApplication
 import com.example.myapp.core.TAG
 import com.example.myapp.todo.data.Item
 import com.example.myapp.todo.data.ItemRepository
+import com.example.myapp.todo.workers.SyncWorkManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 
-class ItemsViewModel(private val itemRepository: ItemRepository) : ViewModel() {
+class ItemsViewModel(
+    private val itemRepository: ItemRepository,
+    private val application: MyApplication
+) : ViewModel() {
     val uiState: Flow<List<Item>> = itemRepository.itemStream
 
     init {
@@ -24,7 +28,12 @@ class ItemsViewModel(private val itemRepository: ItemRepository) : ViewModel() {
     fun loadItems() {
         Log.d(TAG, "loadItems...")
         viewModelScope.launch {
+            // Refresh will check for pending operations
+            // If pending ops exist, trigger sync immediately
             itemRepository.refresh()
+
+            // Also trigger sync in case there are pending operations
+            SyncWorkManager.triggerSync(application)
         }
     }
 
@@ -33,7 +42,7 @@ class ItemsViewModel(private val itemRepository: ItemRepository) : ViewModel() {
             initializer {
                 val app =
                     (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as MyApplication)
-                ItemsViewModel(app.container.itemRepository)
+                ItemsViewModel(app.container.itemRepository, app)
             }
         }
     }
