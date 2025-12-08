@@ -12,6 +12,7 @@ import com.example.myapp.todo.data.remote.ItemService
 import com.example.myapp.todo.utils.showSyncCompletedNotification
 import com.example.myapp.todo.utils.showSyncInProgressNotification
 import com.example.myapp.todo.utils.dismissSyncNotification
+import retrofit2.HttpException
 
 class SyncWorker(
     context: Context,
@@ -81,13 +82,40 @@ class SyncWorker(
                         OperationType.UPDATE -> {
                             val item = itemDao.getById(operation.itemId)
                             if (item != null) {
+                                // If the item no longer needs sync (updated via WebSocket), skip it
+                                if (!item.needsSync) {
+                                    Log.d(TAG, "SyncWorker: Item ${operation.itemId} already synced via WebSocket")
+                                    pendingOperationDao.deleteById(operation.id)
+                                    successCount++
+                                    continue
+                                }
+
                                 Log.d(TAG, "SyncWorker: Updating item ${item._id} on server")
-                                val updatedItem = itemService.update(bearerToken, item._id, item)
-                                // Update local item with server data and clear sync flag
-                                itemDao.update(updatedItem.copy(needsSync = false))
-                                pendingOperationDao.deleteById(operation.id)
-                                successCount++
-                                Log.d(TAG, "SyncWorker: Successfully updated item ${item._id}")
+                                try {
+                                    val updatedItem = itemService.update(bearerToken, item._id, item)
+                                    // Update local item with server data and clear sync flag
+                                    itemDao.update(updatedItem.copy(needsSync = false))
+                                    pendingOperationDao.deleteById(operation.id)
+                                    successCount++
+                                    Log.d(TAG, "SyncWorker: Successfully updated item ${item._id}")
+                                } catch (e: retrofit2.HttpException) {
+                                    // Handle version conflicts (409 or 400)
+                                    if (e.code() == 409 || e.code() == 400) {
+                                        Log.w(TAG, "SyncWorker: Version conflict for item ${item._id}, fetching from server")
+                                        try {
+                                            val serverItem = itemService.read(bearerToken, item._id)
+                                            itemDao.update(serverItem.copy(needsSync = false))
+                                            pendingOperationDao.deleteById(operation.id)
+                                            successCount++
+                                            Log.d(TAG, "SyncWorker: Resolved conflict by fetching server version")
+                                        } catch (fetchError: Exception) {
+                                            Log.e(TAG, "SyncWorker: Failed to resolve conflict for item ${item._id}", fetchError)
+                                            throw fetchError
+                                        }
+                                    } else {
+                                        throw e
+                                    }
+                                }
                             } else {
                                 // Item was deleted locally, remove pending operation
                                 pendingOperationDao.deleteById(operation.id)

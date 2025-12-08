@@ -10,6 +10,9 @@ interface PendingOperationDao {
     @Query("SELECT * FROM pending_operations ORDER BY timestamp ASC")
     suspend fun getAllPendingOperations(): List<PendingOperation>
 
+    @Query("SELECT * FROM pending_operations WHERE itemId = :itemId ORDER BY timestamp ASC")
+    suspend fun getByItemId(itemId: String): List<PendingOperation>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(operation: PendingOperation)
 

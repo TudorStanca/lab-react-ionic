@@ -260,7 +260,18 @@ class ItemRepository(
 
     private suspend fun handleItemUpdated(item: Item) {
         Log.d(TAG, "handleItemUpdated...")
-        itemDao.update(item)
+
+        // Check if we have a pending sync for this item
+        val pendingOps = pendingOperationDao.getByItemId(item._id)
+
+        if (pendingOps.isNotEmpty()) {
+            Log.d(TAG, "Received WebSocket update for item with pending sync, clearing sync flag")
+            // Remove pending sync operations since server has newer version
+            pendingOps.forEach { pendingOperationDao.deleteById(it.id) }
+        }
+
+        // Update with the server version
+        itemDao.update(item.copy(needsSync = false))
     }
 
     private suspend fun handleItemCreated(item: Item) {
