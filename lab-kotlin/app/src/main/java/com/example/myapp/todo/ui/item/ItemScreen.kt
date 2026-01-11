@@ -1,12 +1,14 @@
+@file:Suppress("OPT_IN_USAGE")
+
 package com.example.myapp.todo.ui.item
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,21 +37,25 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapp.R
 import com.example.myapp.core.Result
-import java.time.Instant
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
+import com.example.myapp.location.MyMap
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
-@RequiresApi(Build.VERSION_CODES.O)
-private val IsoUtcFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC)
+private val IsoUtcDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+    timeZone = TimeZone.getTimeZone("UTC")
+}
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun Long.toIsoUtcString(): String = IsoUtcFormatter.format(Instant.ofEpochMilli(this))
+private fun Long.toIsoUtcStringCompat(): String = IsoUtcDateFormat.format(Date(this))
 
-@RequiresApi(Build.VERSION_CODES.O)
-fun String.toEpochMillisOrNull(): Long? = runCatching { Instant.parse(this).toEpochMilli() }.getOrNull()
+private fun String.toEpochMillisOrNullCompat(): Long? = try {
+    IsoUtcDateFormat.parse(this)?.time
+} catch (_: ParseException) {
+    null
+}
 
-@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemScreen(itemId: String?, onClose: () -> Unit) {
@@ -61,22 +67,26 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
     var launchDate by rememberSaveable { mutableStateOf(itemUiState.item.launchDate) }
     var isCracked by rememberSaveable { mutableStateOf(itemUiState.item.isCracked) }
 
+    // Coordinates shown/saved for this item
+    var lat by rememberSaveable { mutableStateOf(if (itemUiState.item.lat != 0.0) itemUiState.item.lat else 46.7712) }
+    var lng by rememberSaveable { mutableStateOf(if (itemUiState.item.lng != 0.0) itemUiState.item.lng else 23.6236) }
+
     Log.d("ItemScreen", "recompose, name = $name")
     Log.d("ItemScreen", "recompose, price = $price")
     Log.d("ItemScreen", "recompose, launchDate = $launchDate")
     Log.d("ItemScreen", "recompose, isCracked = $isCracked")
 
     LaunchedEffect(itemUiState.submitResult) {
-        Log.d("ItemScreen", "Submit = ${itemUiState.submitResult}");
+        Log.d("ItemScreen", "Submit = ${itemUiState.submitResult}")
         if (itemUiState.submitResult is Result.Success) {
-            Log.d("ItemScreen", "Closing screen");
-            onClose();
+            Log.d("ItemScreen", "Closing screen")
+            onClose()
         }
     }
 
     var itemInitialized by remember { mutableStateOf(itemId == null) }
     LaunchedEffect(itemId, itemUiState.loadResult) {
-        Log.d("ItemScreen", "Item initialized = ${itemUiState.loadResult}");
+        Log.d("ItemScreen", "Item initialized = ${itemUiState.loadResult}")
         if (itemInitialized) {
             return@LaunchedEffect
         }
@@ -85,6 +95,8 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
             price = itemUiState.item.price
             launchDate = itemUiState.item.launchDate
             isCracked = itemUiState.item.isCracked
+            lat = if (itemUiState.item.lat != 0.0) itemUiState.item.lat else 46.7712
+            lng = if (itemUiState.item.lng != 0.0) itemUiState.item.lng else 23.6236
             itemInitialized = true
         }
     }
@@ -95,8 +107,8 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
                 title = { Text(text = stringResource(id = R.string.item)) },
                 actions = {
                     Button(onClick = {
-                        Log.d("ItemScreen", "save item");
-                        itemViewModel.saveOrUpdateItem(name, price, launchDate, isCracked)
+                        Log.d("ItemScreen", "save item")
+                        itemViewModel.saveOrUpdateItem(name, price, launchDate, isCracked, lat, lng)
                     }) { Text("Save") }
                 }
             )
@@ -144,11 +156,11 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
 
                 Row {
                     val datePickerState = rememberDatePickerState(
-                        initialSelectedDateMillis = launchDate.toEpochMillisOrNull()
+                        initialSelectedDateMillis = launchDate.toEpochMillisOrNullCompat()
                     )
                     LaunchedEffect(datePickerState.selectedDateMillis) {
                         datePickerState.selectedDateMillis?.let { millis ->
-                            launchDate = millis.toIsoUtcString()
+                            launchDate = millis.toIsoUtcStringCompat()
                         }
                     }
 
@@ -169,6 +181,24 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
                     )
                 }
 
+                if (itemUiState.loadResult !is Result.Loading) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Location: $lat, $lng",
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    MyMap(
+                        lat = lat,
+                        lng = lng,
+                        onLocationChange = { newLat, newLng ->
+                            lat = newLat
+                            lng = newLng
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 if (itemUiState.submitResult is Result.Error) {
                     Text(
                         text = "Failed to submit item - ${(itemUiState.submitResult as Result.Error).exception?.message}",
@@ -180,8 +210,6 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
     }
 }
 
-
-@RequiresApi(Build.VERSION_CODES.O)
 @Preview
 @Composable
 fun PreviewItemScreen() {

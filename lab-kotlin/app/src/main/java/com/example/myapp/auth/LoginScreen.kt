@@ -1,8 +1,9 @@
+@file:Suppress("OPT_IN_USAGE")
+
 package com.example.myapp.auth
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
@@ -51,9 +52,9 @@ fun LoginScreen(onClose: () -> Unit) {
                 onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth()
             )
-            Log.d(TAG, "recompose");
+            Log.d(TAG, "recompose")
             Button(onClick = {
-                Log.d(TAG, "login...");
+                Log.d(TAG, "login...")
                 loginViewModel.login(username, password)
             }) {
                 Text("Login")
@@ -63,7 +64,7 @@ fun LoginScreen(onClose: () -> Unit) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(15.dp)
-                );
+                )
             }
             if (loginUiState.authenticationError != null) {
                 Text(text = "Login failed ${loginUiState.authenticationError.message}")
@@ -72,9 +73,9 @@ fun LoginScreen(onClose: () -> Unit) {
     }
 
     LaunchedEffect(loginUiState.authenticationCompleted) {
-        Log.d(TAG, "Auth completed");
+        Log.d(TAG, "Auth completed")
         if (loginUiState.authenticationCompleted) {
-            onClose();
+            onClose()
         }
     }
 }

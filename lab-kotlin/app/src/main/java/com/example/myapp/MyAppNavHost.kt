@@ -15,12 +15,13 @@ import com.example.myapp.auth.LoginScreen
 import com.example.myapp.core.data.UserPreferences
 import com.example.myapp.core.data.remote.Api
 import com.example.myapp.core.ui.UserPreferencesViewModel
-import com.example.myapp.todo.ui.MyNetworkStatus
+import com.example.myapp.location.MyLocationScreen
 import com.example.myapp.todo.ui.item.ItemScreen
 import com.example.myapp.todo.ui.items.ItemsScreen
 
 val itemsRoute = "items"
 val authRoute = "auth"
+val locationRoute = "location"
 
 @Composable
 fun MyAppNavHost() {
@@ -56,7 +57,14 @@ fun MyAppNavHost() {
                     navController.navigate(authRoute) {
                         popUpTo(0)
                     }
-                })
+                },
+                onOpenLocation = {
+                    navController.navigate(locationRoute)
+                }
+            )
+        }
+        composable(locationRoute) {
+            MyLocationScreen(onClose = { navController.popBackStack() })
         }
         composable(
             route = "$itemsRoute/{id}",

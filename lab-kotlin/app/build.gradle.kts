@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.google.ksp)
+}
+
+fun readLocalProperties(rootDir: File, key: String): String? {
+    val file = File(rootDir, "local.properties")
+    if (!file.exists()) return null
+    val props = Properties()
+    file.inputStream().use(props::load)
+    return props.getProperty(key)
 }
 
 android {
@@ -19,6 +29,17 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Google Maps API key manifest placeholder.
+        // Recommended: set MAPS_API_KEY in *local.properties* (not committed).
+        // Optional overrides (useful for CI): ENV -> Gradle property (-P) -> local.properties -> empty.
+        val mapsApiKey =
+            System.getenv("MAPS_API_KEY")
+                ?: (project.findProperty("MAPS_API_KEY") as String?)
+                ?: readLocalProperties(rootProject.projectDir, "MAPS_API_KEY")
+                ?: ""
+
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -74,4 +95,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 
     implementation(libs.androidx.work)
+
+    // Location + Maps
+    implementation(libs.play.services.location)
+    implementation(libs.maps.compose)
+    implementation(libs.accompanist.permissions)
 }

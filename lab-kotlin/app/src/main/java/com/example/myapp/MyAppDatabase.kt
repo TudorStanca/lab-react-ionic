@@ -11,7 +11,7 @@ import com.example.myapp.todo.data.local.ItemDao
 import com.example.myapp.todo.data.local.PendingOperation
 import com.example.myapp.todo.data.local.PendingOperationDao
 
-@Database(entities = arrayOf(Item::class, PendingOperation::class), version = 3)
+@Database(entities = arrayOf(Item::class, PendingOperation::class), version = 4)
 abstract class MyAppDatabase : RoomDatabase() {
     abstract fun itemDao(): ItemDao
     abstract fun pendingOperationDao(): PendingOperationDao
@@ -61,6 +61,13 @@ abstract class MyAppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL("ALTER TABLE items ADD COLUMN lat REAL NOT NULL DEFAULT 0.0")
+                database.execSQL("ALTER TABLE items ADD COLUMN lng REAL NOT NULL DEFAULT 0.0")
+            }
+        }
+
         fun getDatabase(context: Context): MyAppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -68,7 +75,7 @@ abstract class MyAppDatabase : RoomDatabase() {
                     MyAppDatabase::class.java,
                     "app_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                 INSTANCE = instance
                 instance

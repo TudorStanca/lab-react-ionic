@@ -11,5 +11,7 @@ data class Item(
     val launchDate: String = "",
     val isCracked: Boolean = false,
     val version: Int = 0,
-    val needsSync: Boolean = false  // Track if item needs to be synced with server
+    val needsSync: Boolean = false,  // Track if item needs to be synced with server
+    val lat: Double = 0.0,
+    val lng: Double = 0.0
 )

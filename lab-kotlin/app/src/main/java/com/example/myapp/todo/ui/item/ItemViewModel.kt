@@ -51,27 +51,36 @@ class ItemViewModel(private val itemId: String?, private val itemRepository: Ite
     }
 
 
-    fun saveOrUpdateItem(name: String, price: Int, launchDate: String, isCracked: Boolean) {
+    fun saveOrUpdateItem(
+        name: String,
+        price: Int,
+        launchDate: String,
+        isCracked: Boolean,
+        lat: Double,
+        lng: Double
+    ) {
         viewModelScope.launch {
-            Log.d(TAG, "saveOrUpdateItem...");
+            Log.d(TAG, "saveOrUpdateItem...")
             try {
                 uiState = uiState.copy(submitResult = Result.Loading)
                 val item = uiState.item.copy(
                     name = name,
                     price = price,
                     launchDate = launchDate,
-                    isCracked = isCracked
+                    isCracked = isCracked,
+                    lat = lat,
+                    lng = lng
                 )
-                val savedItem: Item;
+                val savedItem: Item
                 if (itemId == null) {
                     savedItem = itemRepository.save(item)
                 } else {
                     savedItem = itemRepository.update(item)
                 }
-                Log.d(TAG, "saveOrUpdateItem succeeeded");
+                Log.d(TAG, "saveOrUpdateItem succeeeded")
                 uiState = uiState.copy(submitResult = Result.Success(savedItem))
             } catch (e: Exception) {
-                Log.d(TAG, "saveOrUpdateItem failed");
+                Log.d(TAG, "saveOrUpdateItem failed")
                 uiState = uiState.copy(submitResult = Result.Error(e))
             }
         }

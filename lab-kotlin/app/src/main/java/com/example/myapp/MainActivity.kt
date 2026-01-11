@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import com.example.myapp.core.TAG
+import com.example.myapp.location.RequireLocationPermissions
 import com.example.myapp.todo.utils.requestNotificationPermission
 import com.example.myapp.ui.theme.MyAppTheme
 import kotlinx.coroutines.launch
@@ -23,7 +24,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             Log.d(TAG, "onCreate")
             MyApp {
-                MyAppNavHost()
+                RequireLocationPermissions {
+                    MyAppNavHost()
+                }
             }
         }
     }
@@ -57,6 +60,8 @@ fun MyApp(content: @Composable () -> Unit) {
 @Composable
 fun PreviewMyApp() {
     MyApp {
-        MyAppNavHost()
+        RequireLocationPermissions {
+            MyAppNavHost()
+        }
     }
 }
