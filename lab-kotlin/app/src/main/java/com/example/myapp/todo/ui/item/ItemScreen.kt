@@ -3,6 +3,17 @@
 package com.example.myapp.todo.ui.item
 
 import android.util.Log
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +54,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.delay
 
 private val IsoUtcDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
     timeZone = TimeZone.getTimeZone("UTC")
@@ -70,6 +82,9 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
     // Coordinates shown/saved for this item
     var lat by rememberSaveable { mutableStateOf(if (itemUiState.item.lat != 0.0) itemUiState.item.lat else 46.7712) }
     var lng by rememberSaveable { mutableStateOf(if (itemUiState.item.lng != 0.0) itemUiState.item.lng else 23.6236) }
+
+    // Simple feedback animation when user changes the pin
+    var showPinUpdated by rememberSaveable { mutableStateOf(false) }
 
     Log.d("ItemScreen", "recompose, name = $name")
     Log.d("ItemScreen", "recompose, price = $price")
@@ -183,18 +198,56 @@ fun ItemScreen(itemId: String?, onClose: () -> Unit) {
 
                 if (itemUiState.loadResult !is Result.Loading) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Location: $lat, $lng",
-                        modifier = Modifier.fillMaxWidth()
-                    )
+
+                    AnimatedVisibility(
+                        visible = showPinUpdated,
+                        enter = slideInVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.9f),
+                        exit = slideOutVertically(animationSpec = tween(180)) + fadeOut(animationSpec = tween(180)) + scaleOut(targetScale = 0.95f)
+                    ) {
+                        Text(
+                            text = "Pin updated",
+                            color = androidx.compose.material3.MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .background(
+                                    androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                    androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                                )
+                                .padding(8.dp)
+                        )
+                    }
+
+                    AnimatedContent(
+                        targetState = Pair(lat, lng),
+                        transitionSpec = {
+                            (fadeIn(tween(220)) + scaleIn(initialScale = 0.98f))
+                                .togetherWith(fadeOut(tween(150)) + scaleOut(targetScale = 1.02f))
+                        },
+                        label = "coords"
+                    ) { (currLat, currLng) ->
+                        Text(
+                            text = "Location: $currLat, $currLng",
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     MyMap(
                         lat = lat,
                         lng = lng,
                         onLocationChange = { newLat, newLng ->
                             lat = newLat
                             lng = newLng
+                            showPinUpdated = true
                         }
                     )
+
+                    LaunchedEffect(showPinUpdated) {
+                        if (showPinUpdated) {
+                            delay(1200)
+                            showPinUpdated = false
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
                 }
