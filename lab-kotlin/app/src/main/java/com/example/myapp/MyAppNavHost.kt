@@ -80,6 +80,10 @@ fun MyAppNavHost() {
             LoginScreen(
                 onClose = {
                     Log.d("MyAppNavHost", "navigate to list")
+                    // Ensure interceptor is populated immediately after login,
+                    // before ItemsScreen triggers network refresh.
+                    Api.tokenInterceptor.token = userPreferencesUiState.token
+                    myAppViewModel.setToken(userPreferencesUiState.token)
                     navController.navigate(itemsRoute)
                 }
             )

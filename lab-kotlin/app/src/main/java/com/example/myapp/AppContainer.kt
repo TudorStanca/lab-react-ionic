@@ -8,6 +8,8 @@ import com.example.myapp.auth.data.AuthRepository
 import com.example.myapp.auth.data.remote.AuthDataSource
 import com.example.myapp.core.data.UserPreferencesRepository
 import com.example.myapp.core.data.remote.Api
+import com.example.myapp.sensors.AndroidProximitySensorMonitor
+import com.example.myapp.sensors.ProximitySensorMonitor
 import com.example.myapp.todo.data.ItemRepository
 import com.example.myapp.todo.data.remote.ItemService
 import com.example.myapp.todo.data.remote.ItemWsClient
@@ -30,6 +32,10 @@ class AppContainer(val context: Context) {
 
     val connectivityMonitor: ConnectivityManagerNetworkMonitor by lazy {
         ConnectivityManagerNetworkMonitor(context)
+    }
+
+    val proximitySensorMonitor: ProximitySensorMonitor by lazy {
+        AndroidProximitySensorMonitor(context)
     }
 
     val itemRepository: ItemRepository by lazy {
